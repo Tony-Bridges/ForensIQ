@@ -1,0 +1,472 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="search"></i> Search & Regex Analysis</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="analysis_type" class="form-label">Search Type</label>
+                        <select class="form-select" id="analysis_type" name="analysis_type" required>
+                            <option value="">Select search type...</option>
+                            <option value="disk_scan">Deep Disk Scan</option>
+                            <option value="memory_search">Memory Dump Search</option>
+                            <option value="pii_search">PII Data Search</option>
+                            <option value="credential_search">Credential Search</option>
+                            <option value="custom_regex">Custom Regex Search</option>
+                        </select>
+                    </div>
+                    
+                    <div id="disk-config" class="mb-3" style="display: none;">
+                        <label for="disk_image_path" class="form-label">Disk Image Path</label>
+                        <input type="text" class="form-control" id="disk_image_path" name="disk_image_path" 
+                               placeholder="/evidence/disk.img" value="/evidence/disk.img">
+                        
+                        <label class="form-label mt-2">Scan Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include_deleted" name="include_deleted" checked>
+                            <label class="form-check-label" for="include_deleted">Include Deleted Files</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="scan_slack_space" name="scan_slack_space" checked>
+                            <label class="form-check-label" for="scan_slack_space">Scan Slack Space</label>
+                        </div>
+                    </div>
+                    
+                    <div id="memory-config" class="mb-3" style="display: none;">
+                        <label for="memory_dump_path" class="form-label">Memory Dump Path</label>
+                        <input type="text" class="form-control" id="memory_dump_path" name="memory_dump_path" 
+                               placeholder="/evidence/memory.dmp" value="/evidence/memory.dmp">
+                    </div>
+                    
+                    <div id="pii-config" class="mb-3" style="display: none;">
+                        <label for="data_source" class="form-label">Data Source</label>
+                        <input type="text" class="form-control" id="data_source" name="data_source" 
+                               placeholder="/evidence/files" value="/evidence/files">
+                        
+                        <label for="scan_depth" class="form-label mt-2">Scan Depth</label>
+                        <select class="form-select" id="scan_depth" name="scan_depth">
+                            <option value="quick">Quick Scan</option>
+                            <option value="standard" selected>Standard Scan</option>
+                            <option value="deep">Deep Scan</option>
+                        </select>
+                    </div>
+                    
+                    <div id="credential-config" class="mb-3" style="display: none;">
+                        <label for="data_source_cred" class="form-label">Data Source</label>
+                        <input type="text" class="form-control" id="data_source_cred" name="data_source" 
+                               placeholder="/evidence/files" value="/evidence/files">
+                        
+                        <label class="form-label mt-2">Credential Types</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="password_field" id="password_field" name="credential_types" checked>
+                            <label class="form-check-label" for="password_field">Password Fields</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="api_key" id="api_key" name="credential_types" checked>
+                            <label class="form-check-label" for="api_key">API Keys</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="token" id="token" name="credential_types">
+                            <label class="form-check-label" for="token">Authentication Tokens</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="private_key" id="private_key" name="credential_types">
+                            <label class="form-check-label" for="private_key">Private Keys</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="aws_key" id="aws_key" name="credential_types">
+                            <label class="form-check-label" for="aws_key">AWS Keys</label>
+                        </div>
+                    </div>
+                    
+                    <div id="custom-config" class="mb-3" style="display: none;">
+                        <label for="data_source_custom" class="form-label">Data Source</label>
+                        <input type="text" class="form-control" id="data_source_custom" name="data_source" 
+                               placeholder="/evidence/files" value="/evidence/files">
+                        
+                        <label for="pattern_name" class="form-label mt-2">Pattern Name</label>
+                        <input type="text" class="form-control" id="pattern_name" name="pattern_name" 
+                               placeholder="custom_pattern" value="serial_numbers">
+                        
+                        <label for="pattern_regex" class="form-label mt-2">Regex Pattern</label>
+                        <input type="text" class="form-control" id="pattern_regex" name="pattern_regex" 
+                               placeholder="\b[A-Z0-9]{10,}\b" value="\b[A-Z]{2}\d{6}[A-Z]{2}\b">
+                        <div class="form-text">Example searches for serial number patterns</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="search"></i> Start Search
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="activity"></i> Search Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+            </div>
+            <div class="card-body">
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ results.error }}
+                </div>
+                {% else %}
+                
+                {% if analysis_type == 'disk_scan' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Scan Summary</h6>
+                        {% if results.disk_info %}
+                        <p><strong>Disk Size:</strong> {{ results.disk_info.disk_size }}</p>
+                        <p><strong>File System:</strong> {{ results.disk_info.filesystem }}</p>
+                        <p><strong>Allocated Space:</strong> {{ results.disk_info.allocated_space }}</p>
+                        <p><strong>Slack Space:</strong> {{ results.disk_info.slack_space }}</p>
+                        {% endif %}
+                        {% if results.scan_duration %}
+                        <p><strong>Scan Duration:</strong> {{ results.scan_duration }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Match Statistics</h6>
+                        {% if results.statistics %}
+                        <p><strong>Total Matches:</strong> {{ results.statistics.total_matches }}</p>
+                        <p><strong>Patterns with Matches:</strong> {{ results.statistics.patterns_with_matches }}</p>
+                        <p><strong>File Matches:</strong> {{ results.statistics.file_matches_count }}</p>
+                        <p><strong>Slack Matches:</strong> {{ results.statistics.slack_matches_count }}</p>
+                        <p><strong>Deleted File Matches:</strong> {{ results.statistics.deleted_matches_count }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.matches %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Pattern Matches</h6>
+                        {% for pattern, matches in results.matches.items() %}
+                        {% if matches %}
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6>{{ pattern.replace('_', ' ').title() }} ({{ matches|length }} matches)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Match</th>
+                                                <th>Location</th>
+                                                <th>Context</th>
+                                                <th>Confidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for match in matches[:10] %}
+                                            <tr>
+                                                <td class="font-monospace small">{{ match.match }}</td>
+                                                <td class="small">{{ match.location }}</td>
+                                                <td class="small">{{ match.context[:50] }}{% if match.context|length > 50 %}...{% endif %}</td>
+                                                <td>{{ (match.confidence * 100)|round(1) }}%</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'memory_search' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Memory Dump Info</h6>
+                        {% if results.dump_info %}
+                        <p><strong>Dump Size:</strong> {{ results.dump_info.dump_size }}</p>
+                        <p><strong>OS Version:</strong> {{ results.dump_info.os_version }}</p>
+                        <p><strong>Architecture:</strong> {{ results.dump_info.architecture }}</p>
+                        <p><strong>Process Count:</strong> {{ results.dump_info.process_count }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Search Statistics</h6>
+                        {% if results.statistics %}
+                        <p><strong>Total Matches:</strong> {{ results.statistics.total_matches }}</p>
+                        <p><strong>Memory Regions:</strong> {{ results.memory_regions|length }}</p>
+                        <p><strong>Process Matches:</strong> {{ results.process_matches.keys()|list|length }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.matches %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Memory Matches</h6>
+                        {% for pattern, matches in results.matches.items() %}
+                        {% if matches %}
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6>{{ pattern.replace('_', ' ').title() }} ({{ matches|length }} matches)</h6>
+                            </div>
+                            <div class="card-body">
+                                {% for match in matches[:5] %}
+                                <div class="alert alert-info p-2">
+                                    <strong>{{ match.match }}</strong><br>
+                                    <div class="small">
+                                        Address: {{ match.memory_address }} | 
+                                        Process: {{ match.process_name }} (PID: {{ match.process_id }}) | 
+                                        Confidence: {{ (match.confidence * 100)|round(1) }}%
+                                    </div>
+                                    <div class="small font-monospace">{{ match.context[:100] }}{% if match.context|length > 100 %}...{% endif %}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'pii_search' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>PII Search Summary</h6>
+                        <p><strong>Data Source:</strong> {{ results.data_source }}</p>
+                        <p><strong>Scan Depth:</strong> {{ results.scan_depth.title() }}</p>
+                        {% if results.risk_assessment %}
+                        <p><strong>Risk Level:</strong> 
+                            <span class="badge bg-{{ 'danger' if results.risk_assessment.risk_level == 'critical' else ('warning' if results.risk_assessment.risk_level == 'high' else 'info') }}">
+                                {{ results.risk_assessment.risk_level.title() }}
+                            </span>
+                        </p>
+                        <p><strong>Total PII Items:</strong> {{ results.risk_assessment.total_pii_items }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>GDPR Compliance</h6>
+                        {% if results.gdpr_compliance %}
+                        <p><strong>Compliance Status:</strong> 
+                            <span class="badge bg-{{ 'success' if results.gdpr_compliance.compliance_status == 'compliant' else 'danger' }}">
+                                {{ results.gdpr_compliance.compliance_status.replace('_', ' ').title() }}
+                            </span>
+                        </p>
+                        <p><strong>Violations:</strong> {{ results.gdpr_compliance.violations|length }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.pii_found %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>PII Data Found</h6>
+                        <div class="row">
+                            {% for pii_type, matches in results.pii_found.items() %}
+                            <div class="col-md-6">
+                                <div class="card mb-2">
+                                    <div class="card-body p-2">
+                                        <h6>{{ pii_type.replace('_', ' ').title() }}</h6>
+                                        <p class="small">{{ matches|length }} instances found</p>
+                                        {% for match in matches[:3] %}
+                                        <div class="small font-monospace">{{ match.match }}</div>
+                                        {% endfor %}
+                                        {% if matches|length > 3 %}
+                                        <div class="small text-muted">... and {{ matches|length - 3 }} more</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.recommendations %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Recommendations</h6>
+                        {% for recommendation in results.recommendations %}
+                        <div class="alert alert-warning">
+                            <i data-feather="alert-triangle"></i> {{ recommendation }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'credential_search' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Credential Search</h6>
+                        <p><strong>Data Source:</strong> {{ results.data_source }}</p>
+                        <p><strong>Types Searched:</strong> {{ results.credential_types_searched|length }}</p>
+                        {% if results.security_assessment %}
+                        <p><strong>Security Risk:</strong> 
+                            <span class="badge bg-{{ 'danger' if results.security_assessment.risk_level == 'critical' else ('warning' if results.security_assessment.risk_level == 'high' else 'info') }}">
+                                {{ results.security_assessment.risk_level.title() }}
+                            </span>
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Exposure Assessment</h6>
+                        {% if results.exposure_risk %}
+                        <p><strong>Exposure Level:</strong> {{ results.exposure_risk.exposure_level.title() }}</p>
+                        <p><strong>Immediate Risks:</strong> {{ results.exposure_risk.immediate_risks|length }}</p>
+                        <p><strong>Long-term Risks:</strong> {{ results.exposure_risk.longterm_risks|length }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.credentials_found %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Credentials Found</h6>
+                        {% for cred_type, matches in results.credentials_found.items() %}
+                        {% if matches %}
+                        <div class="alert alert-warning">
+                            <strong>{{ cred_type.replace('_', ' ').title() }} ({{ matches|length }} found)</strong><br>
+                            {% for match in matches[:3] %}
+                            <div class="small font-monospace">{{ match.match[:50] }}{% if match.match|length > 50 %}...{% endif %}</div>
+                            {% endfor %}
+                            {% if matches|length > 3 %}
+                            <div class="small text-muted">... and {{ matches|length - 3 }} more instances</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'custom_regex' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Custom Search</h6>
+                        <p><strong>Data Source:</strong> {{ results.data_source }}</p>
+                        <p><strong>Pattern Name:</strong> {{ results.custom_patterns.keys()|list|first }}</p>
+                        {% if results.performance_metrics %}
+                        <p><strong>Search Duration:</strong> {{ results.performance_metrics.search_duration }}</p>
+                        <p><strong>Total Matches:</strong> {{ results.performance_metrics.total_matches }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Pattern Statistics</h6>
+                        {% if results.pattern_statistics %}
+                        {% for pattern, stats in results.pattern_statistics.items() %}
+                        <p><strong>{{ pattern }}:</strong> {{ stats.match_count }} matches</p>
+                        <p><strong>Avg Confidence:</strong> {{ (stats.avg_confidence * 100)|round(1) }}%</p>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.matches %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Custom Pattern Matches</h6>
+                        {% for pattern, matches in results.matches.items() %}
+                        {% if matches %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>{{ pattern }} ({{ matches|length }} matches)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Match</th>
+                                                <th>Location</th>
+                                                <th>Line</th>
+                                                <th>Context</th>
+                                                <th>Confidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for match in matches %}
+                                            <tr>
+                                                <td class="font-monospace">{{ match.match }}</td>
+                                                <td class="small">{{ match.location }}</td>
+                                                <td>{{ match.line_number }}</td>
+                                                <td class="small">{{ match.context[:40] }}{% if match.context|length > 40 %}...{% endif %}</td>
+                                                <td>{{ (match.confidence * 100)|round(1) }}%</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="search" class="text-muted" style="width: 64px; height: 64px;"></i>
+                <p class="text-muted mt-3">Configure search parameters to begin deep scanning for patterns, PII, credentials, and custom regex matches.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const analysisType = this.value;
+    const diskConfig = document.getElementById('disk-config');
+    const memoryConfig = document.getElementById('memory-config');
+    const piiConfig = document.getElementById('pii-config');
+    const credentialConfig = document.getElementById('credential-config');
+    const customConfig = document.getElementById('custom-config');
+    
+    // Hide all config sections
+    diskConfig.style.display = 'none';
+    memoryConfig.style.display = 'none';
+    piiConfig.style.display = 'none';
+    credentialConfig.style.display = 'none';
+    customConfig.style.display = 'none';
+    
+    // Show relevant config section
+    if (analysisType === 'disk_scan') {
+        diskConfig.style.display = 'block';
+    } else if (analysisType === 'memory_search') {
+        memoryConfig.style.display = 'block';
+    } else if (analysisType === 'pii_search') {
+        piiConfig.style.display = 'block';
+    } else if (analysisType === 'credential_search') {
+        credentialConfig.style.display = 'block';
+    } else if (analysisType === 'custom_regex') {
+        customConfig.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

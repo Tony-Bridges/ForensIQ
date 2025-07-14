@@ -1,0 +1,382 @@
+
+{% extends "layout.html" %}
+
+{% block title %}Registry Analysis - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-primary">
+                    <i class="fas fa-database me-2"></i>
+                    Windows Registry Analysis
+                </h2>
+                <div class="text-muted">
+                    <small>
+                        <i class="fas fa-clock me-1"></i>
+                        {{ moment().format('MMMM Do YYYY, h:mm A') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Analysis Configuration -->
+        <div class="col-lg-4">
+            <div class="forensics-card">
+                <h5 class="mb-4">
+                    <i class="fas fa-cogs text-primary me-2"></i>
+                    Analysis Configuration
+                </h5>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Analysis Type</label>
+                        <select class="form-select" name="analysis_type" required>
+                            <option value="">Select Analysis Type</option>
+                            <option value="hive_analysis">Registry Hive Analysis</option>
+                            <option value="autostart_analysis">Autostart Locations</option>
+                            <option value="timeline_analysis">Timeline Analysis</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Registry File</label>
+                        <input type="file" class="form-control" name="registry_file" accept=".dat,.hiv,.reg">
+                        <div class="form-text">Upload Windows registry hive files (SYSTEM, SOFTWARE, SAM, etc.)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeDeleted" checked>
+                            <label class="form-check-label" for="includeDeleted">
+                                Include deleted entries
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="timelineAnalysis" checked>
+                            <label class="form-check-label" for="timelineAnalysis">
+                                Generate timeline data
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>
+                        Start Analysis
+                    </button>
+                </form>
+                
+                <!-- Registry Locations Reference -->
+                <div class="mt-4">
+                    <h6 class="text-secondary">Common Registry Locations</h6>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                            <small>HKLM\SOFTWARE</small>
+                            <span class="badge bg-info rounded-pill">Software</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                            <small>HKLM\SYSTEM</small>
+                            <span class="badge bg-warning rounded-pill">System</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                            <small>HKLM\SAM</small>
+                            <span class="badge bg-danger rounded-pill">Security</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                            <small>HKCU\Software</small>
+                            <span class="badge bg-success rounded-pill">User</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analysis Results -->
+        <div class="col-lg-8">
+            {% if results %}
+            <div class="forensics-card">
+                <h5 class="mb-4">
+                    <i class="fas fa-chart-bar text-success me-2"></i>
+                    Analysis Results
+                </h5>
+                
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    {{ results.error }}
+                </div>
+                {% else %}
+                
+                <!-- Registry Analysis Results -->
+                {% if results.registry_analysis %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Hive Information
+                                </h6>
+                                {% set hive_info = results.registry_analysis.hive_info %}
+                                <ul class="list-unstyled mb-0">
+                                    <li><strong>Signature:</strong> {{ hive_info.signature or 'Unknown' }}</li>
+                                    <li><strong>Last Written:</strong> {{ hive_info.last_written or 'Unknown' }}</li>
+                                    <li><strong>Hive Size:</strong> {{ hive_info.hive_size or 'Unknown' }} bytes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-body">
+                                <h6 class="card-title text-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Suspicious Entries
+                                </h6>
+                                {% if results.registry_analysis.suspicious_entries %}
+                                <ul class="list-unstyled mb-0">
+                                    {% for entry in results.registry_analysis.suspicious_entries[:3] %}
+                                    <li class="small">{{ entry.description }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-muted small mb-0">No suspicious entries detected</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Autostart Entries -->
+                {% if results.registry_analysis.autostart_entries %}
+                <div class="mb-4">
+                    <h6 class="text-secondary">Autostart Entries</h6>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Analysis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in results.registry_analysis.autostart_entries %}
+                                <tr>
+                                    <td class="font-monospace small">{{ entry.location }}</td>
+                                    <td>
+                                        {% if entry.found %}
+                                        <span class="badge bg-success">Found</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Not Found</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small">{{ entry.analysis }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Recent Activity -->
+                {% if results.registry_analysis.recently_accessed %}
+                <div class="mb-4">
+                    <h6 class="text-secondary">Recent Activity</h6>
+                    <div class="row">
+                        {% for activity in results.registry_analysis.recently_accessed %}
+                        <div class="col-md-6 mb-2">
+                            <div class="card bg-secondary">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title small mb-1">{{ activity.type }}</h6>
+                                    <p class="card-text small text-muted mb-0">{{ activity.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                <!-- Autostart Locations -->
+                {% if results.autostart_locations %}
+                <div class="mb-4">
+                    <h6 class="text-secondary">Common Autostart Locations</h6>
+                    <div class="list-group">
+                        {% for location in results.autostart_locations %}
+                        <div class="list-group-item list-group-item-dark">
+                            <code>{{ location }}</code>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if results.analysis_note %}
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {{ results.analysis_note }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- File Analysis -->
+                {% if results.file_info %}
+                <div class="mb-4">
+                    <h6 class="text-secondary">File Information</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><strong>File Type:</strong> {{ results.file_info.file_type or 'Unknown' }}</li>
+                                <li><strong>MIME Type:</strong> {{ results.file_info.mime_type or 'Unknown' }}</li>
+                                <li><strong>Encoding:</strong> {{ results.file_info.encoding or 'Unknown' }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            {% if results.hashes %}
+                            <ul class="list-unstyled">
+                                {% for algo, hash_val in results.hashes.hashes.items() %}
+                                <li><strong>{{ algo.upper() }}:</strong> <code class="small">{{ hash_val }}</code></li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Hexdump -->
+                {% if results.hexdump and results.hexdump.hexdump_output %}
+                <div class="mb-4">
+                    <h6 class="text-secondary">Registry Hive Header (Hexdump)</h6>
+                    <pre class="bg-dark p-3 rounded border"><code class="text-light">{{ results.hexdump.hexdump_output }}</code></pre>
+                </div>
+                {% endif %}
+                
+                <!-- Suspicious Patterns -->
+                {% if results.suspicious_patterns and results.suspicious_patterns.total_matches > 0 %}
+                <div class="mb-4">
+                    <h6 class="text-secondary">Suspicious Pattern Matches</h6>
+                    <div class="alert alert-warning">
+                        <strong>Total Matches:</strong> {{ results.suspicious_patterns.total_matches }}
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Pattern</th>
+                                    <th>Matches</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pattern, matches in results.suspicious_patterns.matches.items() %}
+                                {% if matches %}
+                                <tr>
+                                    <td><code>{{ pattern }}</code></td>
+                                    <td>{{ matches|length }}</td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Raw Data Sections -->
+                <div class="mt-4">
+                    <ul class="nav nav-tabs" role="tablist">
+                        {% if results.strings_analysis %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#strings-tab">
+                                Strings Analysis
+                            </button>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#raw-data-tab">
+                                Raw Data
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content mt-3">
+                        {% if results.strings_analysis %}
+                        <div class="tab-pane fade show active" id="strings-tab">
+                            <h6>Extracted Strings</h6>
+                            {% if results.strings_analysis.suspicious_strings %}
+                            <div class="alert alert-danger">
+                                <strong>Suspicious Strings Found:</strong> {{ results.strings_analysis.suspicious_strings|length }}
+                            </div>
+                            {% endif %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="small">ASCII Strings ({{ results.strings_analysis.strings_found|length }})</h6>
+                                    <div class="bg-dark p-2 rounded" style="max-height: 300px; overflow-y: auto;">
+                                        {% for string in results.strings_analysis.strings_found[:50] %}
+                                        <div class="small font-monospace">{{ string }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% if results.strings_analysis.suspicious_strings %}
+                                <div class="col-md-6">
+                                    <h6 class="small text-danger">Suspicious Strings</h6>
+                                    <div class="bg-dark p-2 rounded" style="max-height: 300px; overflow-y: auto;">
+                                        {% for item in results.strings_analysis.suspicious_strings %}
+                                        <div class="small font-monospace text-warning">{{ item.string }} 
+                                            <span class="badge bg-danger">{{ item.pattern }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="tab-pane fade" id="raw-data-tab">
+                            <pre class="bg-dark p-3 rounded"><code class="text-light">{{ results | tojson(indent=2) }}</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.forensics-card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.nav-tabs .nav-link {
+    background-color: #2d2d2d;
+    border-color: #444;
+    color: #fff;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #1a1a1a;
+    border-color: #333 #333 #1a1a1a;
+    color: #fff;
+}
+
+.tab-content {
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-top: none;
+    padding: 1rem;
+    border-radius: 0 0 0.375rem 0.375rem;
+}
+</style>
+{% endblock %}

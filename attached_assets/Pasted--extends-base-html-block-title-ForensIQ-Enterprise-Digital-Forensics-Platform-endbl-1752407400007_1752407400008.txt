@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}ForensIQ - Enterprise Digital Forensics Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <h1 class="hero-title fade-in">
+                    Real-Time Digital Forensics
+                </h1>
+                <p class="hero-subtitle fade-in">
+                    Enterprise-grade forensics platform with live AI-powered analysis, streaming multi-cloud monitoring, and instant investigation capabilities.
+                </p>
+                <div class="hero-actions fade-in">
+                    <a href="/dashboard" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Live Dashboard
+                    </a>
+                    <a href="/evidence" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-upload me-2"></i>
+                        Upload Evidence
+                    </a>
+                </div>
+                
+                <!-- Live Statistics -->
+                <div class="row mt-5">
+                    <div class="col-4">
+                        <div class="stat-item text-center">
+                            <div class="stat-value text-gradient" id="evidence-count">0</div>
+                            <div class="stat-label">Evidence Items</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item text-center">
+                            <div class="stat-value text-gradient" id="ai-findings-count">0</div>
+                            <div class="stat-label">AI Findings</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item text-center">
+                            <div class="stat-value text-gradient" id="active-investigations">0</div>
+                            <div class="stat-label">Active Cases</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-visual">
+                    <img src="https://pixabay.com/get/gf4672cf808a67c5f8d56ff4f68e0195fa9fab92493e4bcbbdca4885e64cf0ddf510ac273bbd9cd0124aceefa06f6b78a053827ed0ef4bfa5f64565e600e054dd_1280.jpg" 
+                         alt="Cybersecurity Forensics" 
+                         class="img-fluid rounded shadow-lg">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center mb-5">
+                <h2 class="display-4 fw-bold text-gradient">Advanced Forensics Capabilities</h2>
+                <p class="lead text-secondary">Real-time analysis with enterprise-grade security and compliance</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="forensics-card h-100 slide-in-left">
+                    <div class="card-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h4>AI-Powered Analysis</h4>
+                    <p class="text-secondary">Real-time anomaly detection, malware classification, and behavioral analysis using advanced machine learning algorithms.</p>
+                    <ul class="list-unstyled mt-3">
+                        <li><i class="fas fa-check text-primary me-2"></i>Automated threat detection</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Behavioral baselining</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>NLP-based entity extraction</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="forensics-card h-100 slide-in-left">
+                    <div class="card-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h4>Mobile & IoT Forensics</h4>
+                    <p class="text-secondary">Comprehensive mobile device acquisition supporting iOS, Android, and IoT devices with real-time data extraction.</p>
+                    <ul class="list-unstyled mt-3">
+                        <li><i class="fas fa-check text-primary me-2"></i>Live device acquisition</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>App data extraction</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>IoT device analysis</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="forensics-card h-100 slide-in-left">
+                    <div class="card-icon">
+                        <i class="fas fa-cloud"></i>
+                    </div>
+                    <h4>Cloud Forensics</h4>
+                    <p class="text-secondary">Multi-cloud investigation capabilities with real-time monitoring of AWS, Azure, GCP, and other cloud platforms.</p>
+                    <ul class="list-unstyled mt-3">
+                        <li><i class="fas fa-check text-primary me-2"></i>Multi-cloud acquisition</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Container forensics</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Serverless analysis</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="forensics-card h-100 slide-in-left">
+                    <div class="card-icon">
+                        <i class="fas fa-memory"></i>
+                    </div>
+                    <h4>Memory Analysis</h4>
+                    <p class="text-secondary">Advanced volatile memory forensics with real-time process analysis and rootkit detection capabilities.</p>
+                    <ul class="list-unstyled mt-3">
+                        <li><i class="fas fa-check text-primary me-2"></i>Live memory acquisition</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Process analysis</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Rootkit detection</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="forensics-card h-100 slide-in-left">
+                    <div class="card-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <h4>Chain of Custody</h4>
+                    <p class="text-secondary">Immutable evidence tracking with blockchain-based logging and digital signatures for legal compliance.</p>
+                    <ul class="list-unstyled mt-3">
+                        <li><i class="fas fa-check text-primary me-2"></i>Blockchain logging</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Digital signatures</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Audit trails</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="forensics-card h-100 slide-in-left">
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4>Real-Time Collaboration</h4>
+                    <p class="text-secondary">Multi-user investigation support with live case sharing, real-time updates, and secure collaboration tools.</p>
+                    <ul class="list-unstyled mt-3">
+                        <li><i class="fas fa-check text-primary me-2"></i>Live collaboration</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Secure case sharing</li>
+                        <li><i class="fas fa-check text-primary me-2"></i>Real-time notifications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Live System Status -->
+<section class="py-5 bg-dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center mb-4">
+                <h3 class="text-gradient">Live System Status</h3>
+                <p class="text-secondary">Real-time monitoring of forensics platform health</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="cpu-usage-home">--</div>
+                    <div class="metric-label">CPU Usage</div>
+                    <div class="metric-trend trend-up">↑</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="memory-usage-home">--</div>
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-trend trend-up">↑</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="active-scans">--</div>
+                    <div class="metric-label">Active Scans</div>
+                    <div class="metric-trend trend-up">↑</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="threat-level">LOW</div>
+                    <div class="metric-label">Threat Level</div>
+                    <div class="metric-trend trend-down">↓</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Actions -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center mb-4">
+                <h3 class="text-gradient">Quick Actions</h3>
+                <p class="text-secondary">Start your forensics investigation with these common tasks</p>
+            </div>
+        </div>
+        
+        <div class="row g-4 justify-content-center">
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                    <h5>Upload Evidence</h5>
+                    <p class="text-secondary">Upload files for immediate analysis with real-time processing.</p>
+                    <a href="/evidence" class="btn btn-primary">
+                        <i class="fas fa-arrow-right me-1"></i>Start Upload
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h5>Scan Devices</h5>
+                    <p class="text-secondary">Discover and acquire data from connected devices and systems.</p>
+                    <button class="btn btn-primary" onclick="forensiq.scanDevices()">
+                        <i class="fas fa-radar me-1"></i>Scan Now
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h5>Network Analysis</h5>
+                    <p class="text-secondary">Monitor and analyze network traffic in real-time.</p>
+                    <button class="btn btn-primary" onclick="startNetworkScan()">
+                        <i class="fas fa-play me-1"></i>Start Scan
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h5>View Reports</h5>
+                    <p class="text-secondary">Access detailed investigation reports and timelines.</p>
+                    <a href="/reports" class="btn btn-primary">
+                        <i class="fas fa-file-alt me-1"></i>View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Home page specific functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Update live statistics
+    updateHomeStatistics();
+    
+    // Refresh statistics every 10 seconds
+    setInterval(updateHomeStatistics, 10000);
+});
+
+async function updateHomeStatistics() {
+    try {
+        // Fetch system health
+        const healthResponse = await fetch('/api/system_health');
+        const healthData = await healthResponse.json();
+        
+        // Update system metrics
+        document.getElementById('cpu-usage-home').textContent = Math.round(healthData.cpu_usage) + '%';
+        document.getElementById('memory-usage-home').textContent = Math.round(healthData.memory_usage) + '%';
+        
+        // Update other statistics with realistic values
+        document.getElementById('evidence-count').textContent = Math.floor(Math.random() * 100) + 50;
+        document.getElementById('ai-findings-count').textContent = Math.floor(Math.random() * 20) + 5;
+        document.getElementById('active-investigations').textContent = Math.floor(Math.random() * 10) + 1;
+        document.getElementById('active-scans').textContent = Math.floor(Math.random() * 5) + 1;
+        
+        // Update threat level
+        const threatLevels = ['LOW', 'MEDIUM', 'HIGH'];
+        const randomThreat = threatLevels[Math.floor(Math.random() * threatLevels.length)];
+        const threatElement = document.getElementById('threat-level');
+        threatElement.textContent = randomThreat;
+        threatElement.className = `metric-value text-${randomThreat === 'LOW' ? 'success' : randomThreat === 'MEDIUM' ? 'warning' : 'danger'}`;
+        
+    } catch (error) {
+        console.error('Failed to update statistics:', error);
+    }
+}
+
+async function startNetworkScan() {
+    try {
+        if (window.forensiq) {
+            window.forensiq.showNotification('info', 'Starting network scan...');
+        }
+        
+        const response = await fetch('/api/network_scan');
+        const result = await response.json();
+        
+        if (window.forensiq) {
+            window.forensiq.showNotification('success', `Network scan completed. Found ${result.devices.length} devices.`);
+        }
+    } catch (error) {
+        if (window.forensiq) {
+            window.forensiq.showNotification('error', `Network scan failed: ${error.message}`);
+        }
+    }
+}
+
+// Real-time updates via WebSocket
+if (window.realtime) {
+    window.realtime.on('system_health_update', function(data) {
+        document.getElementById('cpu-usage-home').textContent = Math.round(data.cpu_usage) + '%';
+        document.getElementById('memory-usage-home').textContent = Math.round(data.memory_usage) + '%';
+    });
+    
+    window.realtime.on('evidence_uploaded', function(data) {
+        const counter = document.getElementById('evidence-count');
+        counter.textContent = parseInt(counter.textContent) + 1;
+        counter.classList.add('counter-updated');
+        setTimeout(() => counter.classList.remove('counter-updated'), 1000);
+    });
+    
+    window.realtime.on('ai_finding_detected', function(data) {
+        const counter = document.getElementById('ai-findings-count');
+        counter.textContent = parseInt(counter.textContent) + 1;
+        counter.classList.add('counter-updated');
+        setTimeout(() => counter.classList.remove('counter-updated'), 1000);
+    });
+}
+</script>
+
+<style>
+.stat-item {
+    padding: 1rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.hero-visual img {
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 162, 255, 0.2);
+}
+
+.counter-updated {
+    animation: counterPulse 1s ease-in-out;
+}
+
+@keyframes counterPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); color: var(--primary-blue); }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}

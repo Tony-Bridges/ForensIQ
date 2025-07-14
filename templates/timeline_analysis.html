@@ -1,0 +1,266 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="clock"></i> Timeline Intelligence & Correlation</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="analysis_type" class="form-label">Analysis Type</label>
+                        <select class="form-select" id="analysis_type" name="analysis_type" required>
+                            <option value="">Select analysis type...</option>
+                            <option value="timeline_correlation">Timeline Correlation</option>
+                            <option value="attack_chain">Attack Chain Reconstruction</option>
+                            <option value="user_activity">User Activity Timeline</option>
+                        </select>
+                    </div>
+                    
+                    <div id="user-config" class="mb-3" style="display: none;">
+                        <label for="user_id" class="form-label">User ID</label>
+                        <input type="text" class="form-control" id="user_id" name="user_id" placeholder="e.g., user123, john.doe">
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <small><i data-feather="info"></i> Analysis will correlate events from multiple data sources including MFT, logs, browser history, USB events, and registry changes.</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="play"></i> Analyze Timeline
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="activity"></i> Timeline Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+            </div>
+            <div class="card-body">
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ results.error }}
+                </div>
+                {% else %}
+                
+                {% if analysis_type == 'timeline_correlation' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Data Sources</h6>
+                        {% if results.data_source_summary %}
+                        {% for source, info in results.data_source_summary.items() %}
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <strong>{{ source.replace('_', ' ').title() }}</strong>
+                                <div class="small">Events: {{ info.event_count }}</div>
+                                <div class="small">Quality: {{ info.data_quality.title() }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Analysis Summary</h6>
+                        {% if results.time_range %}
+                        <p><strong>Time Range:</strong> {{ results.time_range.duration }}</p>
+                        {% endif %}
+                        <p><strong>Total Events:</strong> {{ results.unified_timeline|length }}</p>
+                        <p><strong>Correlations Found:</strong> {{ results.correlation_findings|length }}</p>
+                        <p><strong>Suspicious Patterns:</strong> {{ results.suspicious_patterns|length }}</p>
+                        <p><strong>Event Clusters:</strong> {{ results.event_clusters|length }}</p>
+                    </div>
+                </div>
+                
+                {% if results.correlation_findings %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Correlation Findings</h6>
+                        {% for correlation in results.correlation_findings %}
+                        <div class="alert alert-info">
+                            <strong>{{ correlation.rule_name.replace('_', ' ').title() }}</strong><br>
+                            {{ correlation.rule_description }}<br>
+                            <div class="small">
+                                Matched Events: {{ correlation.matched_events|length }} | 
+                                Confidence: {{ (correlation.confidence * 100)|round(1) }}%
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.suspicious_patterns %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Suspicious Patterns</h6>
+                        {% for pattern in results.suspicious_patterns %}
+                        <div class="alert alert-{{ 'danger' if pattern.severity == 'high' else 'warning' }}">
+                            <strong>{{ pattern.pattern_type.replace('_', ' ').title() }}</strong><br>
+                            {{ pattern.description }}<br>
+                            <div class="small">Confidence: {{ (pattern.confidence * 100)|round(1) }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'attack_chain' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Attack Chain Overview</h6>
+                        <p><strong>Attack Chains Identified:</strong> {{ results.attack_chains|length }}</p>
+                        <p><strong>IOCs Found:</strong> {{ results.indicators_of_compromise|length }}</p>
+                        <p><strong>Lateral Movement:</strong> {{ results.lateral_movement|length }}</p>
+                        <p><strong>Persistence Mechanisms:</strong> {{ results.persistence_mechanisms|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Attack Stages</h6>
+                        {% if results.attack_stages %}
+                        {% for stage, events in results.attack_stages.items() %}
+                        <div class="small mb-2">
+                            <strong>{{ stage.replace('_', ' ').title() }}:</strong> {{ events|length }} events
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.indicators_of_compromise %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Indicators of Compromise</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Value</th>
+                                        <th>Context</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ioc in results.indicators_of_compromise[:10] %}
+                                    <tr>
+                                        <td><span class="badge bg-warning">{{ ioc.type }}</span></td>
+                                        <td class="font-monospace small">{{ ioc.value[:50] }}{% if ioc.value|length > 50 %}...{% endif %}</td>
+                                        <td class="small">{{ ioc.context }}</td>
+                                        <td>{{ ioc.confidence }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'user_activity' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>User Activity Summary</h6>
+                        <p><strong>User ID:</strong> {{ results.user_id }}</p>
+                        <p><strong>Timeline Events:</strong> {{ results.activity_timeline|length }}</p>
+                        <p><strong>Applications Used:</strong> {{ results.application_usage.keys()|list|length }}</p>
+                        <p><strong>Files Accessed:</strong> {{ results.file_interactions|length }}</p>
+                        <p><strong>Network Connections:</strong> {{ results.network_activity|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Behavior Analysis</h6>
+                        {% if results.behavior_patterns %}
+                        <p><strong>Login Pattern:</strong> {{ results.behavior_patterns.get('login_pattern', 'Normal') }}</p>
+                        <p><strong>Working Hours:</strong> {{ results.behavior_patterns.get('working_hours', 'Standard') }}</p>
+                        <p><strong>Activity Level:</strong> {{ results.behavior_patterns.get('activity_level', 'Normal') }}</p>
+                        {% endif %}
+                        <p><strong>Anomalies Detected:</strong> {{ results.anomalous_behavior|length }}</p>
+                    </div>
+                </div>
+                
+                {% if results.activity_timeline %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Activity Timeline (Recent Events)</h6>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead class="sticky-top bg-dark text-light">
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Activity</th>
+                                        <th>Details</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in results.activity_timeline[:20] %}
+                                    <tr>
+                                        <td class="small">{{ event.timestamp[:16] }}</td>
+                                        <td><span class="badge bg-primary">{{ event.activity_type }}</span></td>
+                                        <td class="small">{{ event.description }}</td>
+                                        <td class="small">{{ event.source }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.anomalous_behavior %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Anomalous Behavior</h6>
+                        {% for anomaly in results.anomalous_behavior %}
+                        <div class="alert alert-warning">
+                            <strong>{{ anomaly.type.replace('_', ' ').title() }}</strong><br>
+                            {{ anomaly.description }}<br>
+                            <div class="small">Time: {{ anomaly.timestamp }} | Risk: {{ anomaly.risk_level }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="clock" class="text-muted" style="width: 64px; height: 64px;"></i>
+                <p class="text-muted mt-3">Select an analysis type to begin timeline correlation and reconstruction.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const analysisType = this.value;
+    const userConfig = document.getElementById('user-config');
+    
+    // Hide all config sections
+    userConfig.style.display = 'none';
+    
+    // Show relevant config section
+    if (analysisType === 'user_activity') {
+        userConfig.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,144 @@
+
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Digital Device Investigation</h2>
+                
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">Investigation Capabilities:</h4>
+                    <ul>
+                        <li>Mobile Device Analysis (iOS, Android, Huawei)</li>
+                        <li>Computer System Investigation (Windows, Linux, MacOS)</li>
+                        <li>Data Acquisition (Logical/Physical)</li>
+                        <li>File System Analysis</li>
+                        <li>System Logs & Artifacts</li>
+                        <li>App Data Extraction</li>
+                    </ul>
+                </div>
+
+                {% if devices %}
+                    <div class="accordion" id="deviceAccordion">
+                        <!-- Mobile Devices Section -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSystems">
+                                    <i data-feather="smartphone"></i> Mobile Devices
+                                </button>
+                            </h2>
+                            <div id="mobileSystems" class="accordion-collapse collapse show">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        {% for device_type in ['ios', 'android', 'huawei'] %}
+                                            {% if devices[device_type] %}
+                                                {% for device in devices[device_type] %}
+                                                <div class="col-md-4 mb-3">
+                                                    <div class="card">
+                                                        <div class="card-body">
+                                                            <h5 class="card-title">
+                                                                <i data-feather="smartphone"></i>
+                                                                {% if device_type == 'ios' %}
+                                                                    iOS Device
+                                                                {% elif device_type == 'android' %}
+                                                                    Android Device
+                                                                {% else %}
+                                                                    Huawei Device
+                                                                {% endif %}
+                                                            </h5>
+                                                            <p>ID: {{ device.id }}</p>
+                                                            <p>Status: 
+                                                                {% if device.status == 'connected' %}
+                                                                    <span class="badge bg-success">Connected</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-danger">Disconnected</span>
+                                                                {% endif %}
+                                                            </p>
+                                                            <form action="{{ url_for('acquire_device') }}" method="POST">
+                                                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                                                <input type="hidden" name="device_type" value="{{ device_type }}">
+                                                                <div class="mb-3">
+                                                                    <select name="acquisition_type" class="form-select">
+                                                                        <option value="logical">Logical Acquisition</option>
+                                                                        <option value="physical">Physical Acquisition</option>
+                                                                    </select>
+                                                                </div>
+                                                                <button type="submit" class="btn btn-primary">
+                                                                    <i data-feather="download"></i> Start Investigation
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Computer Systems Section -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#computerSystems">
+                                    <i data-feather="monitor"></i> Computer Systems
+                                </button>
+                            </h2>
+                            <div id="computerSystems" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        {% for device_type in ['windows', 'linux', 'macos'] %}
+                                            {% if devices[device_type] %}
+                                                {% for device in devices[device_type] %}
+                                                <div class="col-md-4 mb-3">
+                                                    <div class="card">
+                                                        <div class="card-body">
+                                                            <h5 class="card-title">
+                                                                <i data-feather="monitor"></i>
+                                                                {{ device_type|title }} System
+                                                            </h5>
+                                                            <p>Hostname: {{ device.id }}</p>
+                                                            <form action="{{ url_for('acquire_device') }}" method="POST">
+                                                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                                                <input type="hidden" name="device_type" value="{{ device_type }}">
+                                                                <div class="mb-3">
+                                                                    <select name="investigation_type" class="form-select">
+                                                                        <option value="file_system">File System Analysis</option>
+                                                                        <option value="memory">Memory Analysis</option>
+                                                                        <option value="system_logs">System Logs</option>
+                                                                    </select>
+                                                                </div>
+                                                                <button type="submit" class="btn btn-primary">
+                                                                    <i data-feather="search"></i> Investigate
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i data-feather="alert-triangle"></i> No devices detected. Please connect a device or system for investigation.
+                    </div>
+                {% endif %}
+
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('detect_devices') }}" class="btn btn-secondary">
+                        <i data-feather="refresh-cw"></i> Refresh Device List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+
+{% extends "layout.html" %}
+
+{% block title %}Investigations - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-folder-open me-2"></i>Investigations</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createInvestigationModal">
+            <i class="fas fa-plus me-1"></i>New Investigation
+        </button>
+    </div>
+
+    <!-- Investigations List -->
+    <div class="row">
+        {% for investigation in investigations %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ investigation.case_number }}</h5>
+                    <span class="badge bg-{{ 'danger' if investigation.priority == 'high' else 'warning' if investigation.priority == 'medium' else 'secondary' }}">
+                        {{ investigation.priority.title() }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">{{ investigation.title }}</h6>
+                    <p class="card-text">{{ investigation.description[:100] }}...</p>
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>Created: {{ investigation.created_at.strftime('%Y-%m-%d') }}
+                        </small>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge bg-{{ 'success' if investigation.status == 'open' else 'secondary' }}">
+                            {{ investigation.status.title() }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100">
+                        <a href="{{ url_for('investigation_detail', investigation_id=investigation.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>View
+                        </a>
+                        <a href="{{ url_for('generate_investigation_report', investigation_id=investigation.id) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-file-pdf me-1"></i>Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Create Investigation Modal -->
+<div class="modal fade" id="createInvestigationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Investigation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="case_number" class="form-label">Case Number</label>
+                        <input type="text" class="form-control" id="case_number" name="case_number" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">Priority</label>
+                        <select class="form-select" id="priority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Investigation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

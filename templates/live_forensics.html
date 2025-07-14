@@ -1,0 +1,379 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="monitor"></i> Live & Remote Forensics</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="analysis_type" class="form-label">Analysis Type</label>
+                        <select class="form-select" id="analysis_type" name="analysis_type" required>
+                            <option value="">Select analysis type...</option>
+                            <option value="memory_acquisition">Remote Memory Acquisition</option>
+                            <option value="process_analysis">Live Process Analysis</option>
+                            <option value="file_collection">Remote File Collection</option>
+                            <option value="registry_analysis">Live Registry Analysis</option>
+                            <option value="network_analysis">Remote Network Analysis</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Target System</h6>
+                        <label for="hostname" class="form-label">Hostname/IP Address</label>
+                        <input type="text" class="form-control" id="hostname" name="hostname" placeholder="192.168.1.100" required>
+                        
+                        <label for="username" class="form-label mt-2">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" placeholder="admin">
+                        
+                        <label for="protocol" class="form-label mt-2">Connection Protocol</label>
+                        <select class="form-select" id="protocol" name="protocol">
+                            <option value="ssh">SSH</option>
+                            <option value="wmi">WMI</option>
+                            <option value="powershell_remoting">PowerShell Remoting</option>
+                            <option value="winrm">WinRM</option>
+                        </select>
+                    </div>
+                    
+                    <div id="memory-config" class="mb-3" style="display: none;">
+                        <label for="acquisition_method" class="form-label">Acquisition Method</label>
+                        <select class="form-select" id="acquisition_method" name="acquisition_method">
+                            <option value="winpmem">WinPMem (Windows)</option>
+                            <option value="osxpmem">OSXPMem (macOS)</option>
+                            <option value="volatility">Volatility (Linux)</option>
+                            <option value="rekall">Rekall</option>
+                        </select>
+                    </div>
+                    
+                    <div id="process-config" class="mb-3" style="display: none;">
+                        <label class="form-label">Analysis Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="process_list" id="process_list" name="analysis_options" checked>
+                            <label class="form-check-label" for="process_list">Process List</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="network_connections" id="network_connections" name="analysis_options" checked>
+                            <label class="form-check-label" for="network_connections">Network Connections</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="loaded_modules" id="loaded_modules" name="analysis_options">
+                            <label class="form-check-label" for="loaded_modules">Loaded Modules</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="handles" id="handles" name="analysis_options">
+                            <label class="form-check-label" for="handles">Process Handles</label>
+                        </div>
+                    </div>
+                    
+                    <div id="registry-config" class="mb-3" style="display: none;">
+                        <label for="registry_keys" class="form-label">Registry Keys (comma-separated)</label>
+                        <textarea class="form-control" id="registry_keys" name="registry_keys" rows="3" 
+                                  placeholder="HKLM\Software\Microsoft\Windows\CurrentVersion\Run,HKLM\System\CurrentControlSet\Services"></textarea>
+                        <div class="form-text">Leave empty to use default keys</div>
+                    </div>
+                    
+                    <div id="network-config" class="mb-3" style="display: none;">
+                        <label for="capture_duration" class="form-label">Capture Duration (seconds)</label>
+                        <input type="number" class="form-control" id="capture_duration" name="capture_duration" value="300" min="60" max="3600">
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <small><i data-feather="alert-triangle"></i> <strong>Important:</strong> Ensure proper authorization before performing live forensics on target systems. This will connect to real systems if credentials are provided.</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="play"></i> Start Analysis
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="activity"></i> Live Forensics Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+            </div>
+            <div class="card-body">
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ results.error }}
+                </div>
+                {% else %}
+                
+                {% if analysis_type == 'memory_acquisition' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Acquisition Summary</h6>
+                        <p><strong>Target System:</strong> {{ results.target_system }}</p>
+                        <p><strong>Method:</strong> {{ results.acquisition_method }}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-{{ 'success' if results.acquisition_status == 'completed' else 'warning' }}">
+                                {{ results.acquisition_status.title() }}
+                            </span>
+                        </p>
+                        {% if results.memory_size %}
+                        <p><strong>Memory Size:</strong> {{ results.memory_size }}</p>
+                        <p><strong>Acquisition Time:</strong> {{ results.acquisition_time }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Integrity Verification</h6>
+                        {% if results.integrity_verification %}
+                        <p><strong>Verification Method:</strong> {{ results.integrity_verification.verification_method.replace('_', ' ').title() }}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-success">{{ results.integrity_verification.integrity_status.title() }}</span>
+                        </p>
+                        <p><strong>SHA-256:</strong> <code class="small">{{ results.integrity_verification.sha256_hash[:32] }}...</code></p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.evidence_metadata %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Evidence Metadata</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    {% for key, value in results.evidence_metadata.items() %}
+                                    <tr>
+                                        <td><strong>{{ key.replace('_', ' ').title() }}:</strong></td>
+                                        <td>{{ value }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'process_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Process Overview</h6>
+                        <p><strong>Running Processes:</strong> {{ results.running_processes|length }}</p>
+                        <p><strong>Suspicious Processes:</strong> {{ results.suspicious_processes|length }}</p>
+                        <p><strong>Network Connections:</strong> {{ results.network_connections|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Security Assessment</h6>
+                        {% if results.suspicious_processes %}
+                        {% for suspicious in results.suspicious_processes[:3] %}
+                        <div class="alert alert-warning p-2">
+                            <strong>{{ suspicious.process.name }}</strong> (PID: {{ suspicious.process.pid }})<br>
+                            <div class="small">Risk Score: {{ suspicious.risk_score }}%</div>
+                            <div class="small">Factors: {{ suspicious.risk_factors|join(', ') }}</div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="alert alert-success p-2">No suspicious processes detected</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.running_processes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Running Processes</h6>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead class="sticky-top bg-dark text-light">
+                                    <tr>
+                                        <th>PID</th>
+                                        <th>Name</th>
+                                        <th>User</th>
+                                        <th>Memory</th>
+                                        <th>CPU %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for process in results.running_processes[:20] %}
+                                    <tr>
+                                        <td>{{ process.pid }}</td>
+                                        <td>{{ process.name }}</td>
+                                        <td class="small">{{ process.user }}</td>
+                                        <td>{{ process.memory_usage }}</td>
+                                        <td>{{ process.cpu_percent }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'file_collection' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Collection Summary</h6>
+                        <p><strong>Files Collected:</strong> {{ results.total_files_collected }}</p>
+                        <p><strong>Total Size:</strong> {{ results.total_size_collected }} bytes</p>
+                        <p><strong>Failed Collections:</strong> {{ results.failed_collections|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Collection Rules</h6>
+                        {% if results.collection_rules %}
+                        {% for rule_type, patterns in results.collection_rules.items() %}
+                        <div class="small"><strong>{{ rule_type.replace('_', ' ').title() }}:</strong> {{ patterns|join(', ') }}</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.collected_files %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Collected Files</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>File Path</th>
+                                        <th>Size</th>
+                                        <th>Modified</th>
+                                        <th>Hash</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for file in results.collected_files[:10] %}
+                                    <tr>
+                                        <td class="small font-monospace">{{ file.file_path }}</td>
+                                        <td>{{ file.file_size }}</td>
+                                        <td class="small">{{ file.modified_time }}</td>
+                                        <td class="small font-monospace">{{ file.hash_value[:16] }}...</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'registry_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Registry Analysis</h6>
+                        <p><strong>Keys Analyzed:</strong> {{ results.registry_analysis.keys()|list|length }}</p>
+                        <p><strong>Suspicious Entries:</strong> {{ results.suspicious_entries|length }}</p>
+                        <p><strong>Autostart Locations:</strong> {{ results.autostart_locations|length }}</p>
+                        <p><strong>Services Analyzed:</strong> {{ results.service_analysis.keys()|list|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Software Inventory</h6>
+                        <p><strong>Installed Programs:</strong> {{ results.installed_software|length }}</p>
+                        {% if results.installed_software %}
+                        {% for software in results.installed_software[:5] %}
+                        <div class="small">{{ software.name }} ({{ software.version }})</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.suspicious_entries %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Suspicious Registry Entries</h6>
+                        {% for entry in results.suspicious_entries %}
+                        <div class="alert alert-warning">
+                            <strong>{{ entry.key_path }}</strong><br>
+                            Value: {{ entry.value_name }} = {{ entry.value_data }}<br>
+                            <div class="small">Risk: {{ entry.risk_level }} | Modified: {{ entry.last_modified }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'network_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Network Overview</h6>
+                        <p><strong>Active Connections:</strong> {{ results.active_connections|length }}</p>
+                        <p><strong>Listening Ports:</strong> {{ results.listening_ports|length }}</p>
+                        <p><strong>Network Interfaces:</strong> {{ results.network_interfaces|length }}</p>
+                        <p><strong>Suspicious Connections:</strong> {{ results.suspicious_connections|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Bandwidth Analysis</h6>
+                        {% if results.bandwidth_analysis %}
+                        <p><strong>Total Traffic:</strong> {{ results.bandwidth_analysis.total_traffic }}</p>
+                        <p><strong>Peak Usage:</strong> {{ results.bandwidth_analysis.peak_usage }}</p>
+                        <p><strong>Unusual Patterns:</strong> {{ results.bandwidth_analysis.unusual_patterns|length }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.suspicious_connections %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Suspicious Network Connections</h6>
+                        {% for connection in results.suspicious_connections %}
+                        <div class="alert alert-warning">
+                            <strong>{{ connection.local_address }}:{{ connection.local_port }} → {{ connection.remote_address }}:{{ connection.remote_port }}</strong><br>
+                            Protocol: {{ connection.protocol }} | Process: {{ connection.process_name }}<br>
+                            <div class="small">Risk Factors: {{ connection.risk_factors|join(', ') }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="monitor" class="text-muted" style="width: 64px; height: 64px;"></i>
+                <p class="text-muted mt-3">Configure target system and select analysis type to begin live forensics investigation.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const analysisType = this.value;
+    const memoryConfig = document.getElementById('memory-config');
+    const processConfig = document.getElementById('process-config');
+    const registryConfig = document.getElementById('registry-config');
+    const networkConfig = document.getElementById('network-config');
+    
+    // Hide all config sections
+    memoryConfig.style.display = 'none';
+    processConfig.style.display = 'none';
+    registryConfig.style.display = 'none';
+    networkConfig.style.display = 'none';
+    
+    // Show relevant config section
+    if (analysisType === 'memory_acquisition') {
+        memoryConfig.style.display = 'block';
+    } else if (analysisType === 'process_analysis') {
+        processConfig.style.display = 'block';
+    } else if (analysisType === 'registry_analysis') {
+        registryConfig.style.display = 'block';
+    } else if (analysisType === 'network_analysis') {
+        networkConfig.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,519 @@
+{
+  "timestamp": "2025-07-13T23:09:27.610391",
+  "total_tests": 43,
+  "passed_tests": 39,
+  "failed_tests": 4,
+  "warnings": 0,
+  "critical_issues": [
+    "Authentication & Security: Access Control - No authentication required",
+    "Admin Portal: Admin Page - Admin portal has server error",
+    "Admin portal returns 500 error"
+  ],
+  "improvements_needed": [
+    "File Upload & Analysis: File Upload - Upload failed: HTTP 500",
+    "Reporting: Reports Page - HTTP 500"
+  ],
+  "missing_features": [],
+  "security_concerns": [
+    "No authentication protection on protected routes"
+  ],
+  "performance_issues": [],
+  "modules": {
+    "Core Application": {
+      "tests": [
+        {
+          "test_name": "Main Page Load",
+          "status": "passed",
+          "message": "Homepage loads successfully",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:27.619887"
+        },
+        {
+          "test_name": "Branding Check",
+          "status": "passed",
+          "message": "ForensIQ branding present",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:27.619968"
+        },
+        {
+          "test_name": "Navigation Check",
+          "status": "passed",
+          "message": "Navigation elements present",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:27.620019"
+        }
+      ],
+      "passed": 3,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Authentication & Security": {
+      "tests": [
+        {
+          "test_name": "Login Page",
+          "status": "passed",
+          "message": "Login page accessible",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:27.631769"
+        },
+        {
+          "test_name": "Access Control",
+          "status": "failed",
+          "message": "No authentication required",
+          "details": null,
+          "severity": "critical",
+          "timestamp": "2025-07-13T23:09:30.195564"
+        }
+      ],
+      "passed": 1,
+      "failed": 1,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "File Upload & Analysis": {
+      "tests": [
+        {
+          "test_name": "Analysis Page",
+          "status": "passed",
+          "message": "Analysis page loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.200807"
+        },
+        {
+          "test_name": "Upload Form",
+          "status": "passed",
+          "message": "File upload form present",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.200898"
+        },
+        {
+          "test_name": "File Upload",
+          "status": "failed",
+          "message": "Upload failed: HTTP 500",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.300226"
+        }
+      ],
+      "passed": 2,
+      "failed": 1,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "AI Analysis": {
+      "tests": [
+        {
+          "test_name": "AI Analysis Page",
+          "status": "passed",
+          "message": "AI analysis interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.328503"
+        },
+        {
+          "test_name": "Feature: anomaly_detection",
+          "status": "passed",
+          "message": "anomaly_detection option available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.328568"
+        },
+        {
+          "test_name": "Feature: malware_classification",
+          "status": "passed",
+          "message": "malware_classification option available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.328615"
+        },
+        {
+          "test_name": "Feature: entity_extraction",
+          "status": "passed",
+          "message": "entity_extraction option available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.328665"
+        },
+        {
+          "test_name": "AI Analysis Processing",
+          "status": "passed",
+          "message": "AI analysis returns results",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.334659"
+        }
+      ],
+      "passed": 5,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Cloud Forensics": {
+      "tests": [
+        {
+          "test_name": "Cloud Forensics Page",
+          "status": "passed",
+          "message": "Cloud forensics interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.350036"
+        },
+        {
+          "test_name": "Provider: aws",
+          "status": "passed",
+          "message": "AWS support available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.350124"
+        },
+        {
+          "test_name": "Provider: azure",
+          "status": "passed",
+          "message": "AZURE support available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.350282"
+        },
+        {
+          "test_name": "Provider: gcp",
+          "status": "passed",
+          "message": "GCP support available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.350350"
+        }
+      ],
+      "passed": 4,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Blockchain Analysis": {
+      "tests": [
+        {
+          "test_name": "Blockchain Page",
+          "status": "passed",
+          "message": "Blockchain analysis interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.373885"
+        },
+        {
+          "test_name": "Feature: wallet_trace",
+          "status": "passed",
+          "message": "wallet_trace available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.373988"
+        },
+        {
+          "test_name": "Feature: smart_contract",
+          "status": "passed",
+          "message": "smart_contract available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.374085"
+        },
+        {
+          "test_name": "Feature: nft_verification",
+          "status": "passed",
+          "message": "nft_verification available",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.374249"
+        }
+      ],
+      "passed": 4,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Mobile & IoT": {
+      "tests": [
+        {
+          "test_name": "Mobile IoT Page",
+          "status": "passed",
+          "message": "Mobile/IoT interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.395696"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Network Analysis": {
+      "tests": [
+        {
+          "test_name": "Network Analysis Page",
+          "status": "passed",
+          "message": "Network analysis interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.415397"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Encryption Analysis": {
+      "tests": [
+        {
+          "test_name": "Encryption Page",
+          "status": "passed",
+          "message": "Encryption analysis interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.439846"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Timeline Analysis": {
+      "tests": [
+        {
+          "test_name": "Timeline Page",
+          "status": "passed",
+          "message": "Timeline analysis interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.468398"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Live Forensics": {
+      "tests": [
+        {
+          "test_name": "Live Forensics Page",
+          "status": "passed",
+          "message": "Live forensics interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.496441"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Sandbox Analysis": {
+      "tests": [
+        {
+          "test_name": "Sandbox Page",
+          "status": "passed",
+          "message": "Sandbox analysis interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.524928"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Threat Intelligence": {
+      "tests": [
+        {
+          "test_name": "Threat Intel Page",
+          "status": "passed",
+          "message": "Threat intelligence interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.565736"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Search & Regex": {
+      "tests": [
+        {
+          "test_name": "Search Page",
+          "status": "passed",
+          "message": "Search analysis interface loads",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.616863"
+        }
+      ],
+      "passed": 1,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Reporting": {
+      "tests": [
+        {
+          "test_name": "Reports Page",
+          "status": "failed",
+          "message": "HTTP 500",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.707139"
+        },
+        {
+          "test_name": "Report Generation API",
+          "status": "passed",
+          "message": "Report API works",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.710084"
+        }
+      ],
+      "passed": 1,
+      "failed": 1,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Admin Portal": {
+      "tests": [
+        {
+          "test_name": "Admin Page",
+          "status": "failed",
+          "message": "Admin portal has server error",
+          "details": null,
+          "severity": "critical",
+          "timestamp": "2025-07-13T23:09:30.800519"
+        }
+      ],
+      "passed": 0,
+      "failed": 1,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Database": {
+      "tests": [
+        {
+          "test_name": "Database File",
+          "status": "passed",
+          "message": "Database file exists",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.800727"
+        },
+        {
+          "test_name": "Database Content",
+          "status": "passed",
+          "message": "Database has content (12288 bytes)",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.800813"
+        }
+      ],
+      "passed": 2,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Performance": {
+      "tests": [
+        {
+          "test_name": "Load Time: /",
+          "status": "passed",
+          "message": "0.003s",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.803901"
+        },
+        {
+          "test_name": "Load Time: /ai_analysis",
+          "status": "passed",
+          "message": "0.003s",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.898854"
+        },
+        {
+          "test_name": "Load Time: /cloud_forensics",
+          "status": "passed",
+          "message": "0.004s",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.902581"
+        },
+        {
+          "test_name": "Load Time: /blockchain_analysis",
+          "status": "passed",
+          "message": "0.003s",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.905790"
+        },
+        {
+          "test_name": "Average Load Time",
+          "status": "passed",
+          "message": "0.003s",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:30.995964"
+        }
+      ],
+      "passed": 5,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    },
+    "Security": {
+      "tests": [
+        {
+          "test_name": "Header: X-Content-Type-Options",
+          "status": "passed",
+          "message": "Security header present",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:31.000033"
+        },
+        {
+          "test_name": "Header: X-Frame-Options",
+          "status": "passed",
+          "message": "Security header present",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:31.000109"
+        },
+        {
+          "test_name": "Header: X-XSS-Protection",
+          "status": "passed",
+          "message": "Security header present",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:31.000218"
+        },
+        {
+          "test_name": "Header: Strict-Transport-Security",
+          "status": "passed",
+          "message": "Security header present",
+          "details": null,
+          "severity": "normal",
+          "timestamp": "2025-07-13T23:09:31.000267"
+        }
+      ],
+      "passed": 4,
+      "failed": 0,
+      "warnings": 0,
+      "coverage": 0
+    }
+  }
+}

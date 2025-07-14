@@ -1,0 +1,771 @@
+
+{% extends "layout.html" %}
+
+{% block title %}Admin Portal - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <!-- Admin Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="dashboard-title">Admin Portal</h1>
+                    <p class="dashboard-subtitle">
+                        System administration, user management, and platform monitoring
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-outline-primary me-2" onclick="refreshSystemData()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="systemMaintenance()">
+                        <i class="fas fa-tools me-1"></i>Maintenance
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Overview -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value">{{ total_users }}</div>
+                    <div class="metric-label">Total Users</div>
+                    <div class="metric-trend trend-up">↑ 2 new</div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value">{{ total_evidence }}</div>
+                    <div class="metric-label">Evidence Items</div>
+                    <div class="metric-trend trend-up">↑ 5 today</div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value">{{ total_investigations }}</div>
+                    <div class="metric-label">Investigations</div>
+                    <div class="metric-trend trend-stable">→ active</div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value text-success">{{ system_uptime }}</div>
+                    <div class="metric-label">System Uptime</div>
+                    <div class="metric-trend trend-up">99.9% availability</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- User Management -->
+            <div class="col-lg-8">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users text-primary me-2"></i>
+                            User Management
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="exportUsers()">
+                                <i class="fas fa-download me-1"></i>Export
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="addNewUser()">
+                                <i class="fas fa-plus me-1"></i>Add User
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table forensics-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Last Login</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in recent_users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                <i class="fas fa-user-circle text-secondary"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.name }}</strong>
+                                                <small class="d-block text-secondary">user{{ loop.index }}@forensiq.com</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if 'Admin' in user.role %}danger{% elif 'Senior' in user.role %}warning{% else %}info{% endif %}">
+                                            {{ user.role }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.last_login }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="editUser('{{ user.name }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" onclick="resetPassword('{{ user.name }}')">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="suspendUser('{{ user.name }}')">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                <i class="fas fa-user-circle text-secondary"></i>
+                                            </div>
+                                            <div>
+                                                <strong>Emily Chen</strong>
+                                                <small class="d-block text-secondary">emily.chen@forensiq.com</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info">Forensics Analyst</span></td>
+                                    <td>6 hours ago</td>
+                                    <td><span class="badge bg-success">Active</span></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                <i class="fas fa-user-circle text-secondary"></i>
+                                            </div>
+                                            <div>
+                                                <strong>Alex Rodriguez</strong>
+                                                <small class="d-block text-secondary">alex.rodriguez@forensiq.com</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-danger">System Admin</span></td>
+                                    <td>30 minutes ago</td>
+                                    <td><span class="badge bg-success">Active</span></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="col-lg-4">
+                <div class="forensics-card mb-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-heartbeat text-primary me-2"></i>
+                        System Health
+                    </h5>
+                    
+                    <div class="health-metrics">
+                        <div class="health-item">
+                            <div class="health-label">CPU Usage</div>
+                            <div class="health-value">
+                                <span class="text-success">Normal</span>
+                                <div class="health-bar">
+                                    <div class="health-progress" style="width: 35%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="health-item">
+                            <div class="health-label">Memory Usage</div>
+                            <div class="health-value">
+                                <span class="text-warning">Moderate</span>
+                                <div class="health-bar">
+                                    <div class="health-progress bg-warning" style="width: 67%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="health-item">
+                            <div class="health-label">Disk Usage</div>
+                            <div class="health-value">
+                                <span class="text-success">Normal</span>
+                                <div class="health-bar">
+                                    <div class="health-progress" style="width: 45%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="health-item">
+                            <div class="health-label">Network I/O</div>
+                            <div class="health-value">
+                                <span class="text-success">Normal</span>
+                                <div class="health-bar">
+                                    <div class="health-progress" style="width: 28%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="forensics-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        Recent Admin Activities
+                    </h5>
+                    
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-user-plus text-success"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p class="mb-1">New user added: Emily Chen</p>
+                                <small class="text-secondary">2 hours ago</small>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-cogs text-info"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p class="mb-1">System settings updated</p>
+                                <small class="text-secondary">4 hours ago</small>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-shield-alt text-warning"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p class="mb-1">Security policy updated</p>
+                                <small class="text-secondary">6 hours ago</small>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-download text-primary"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p class="mb-1">System backup completed</p>
+                                <small class="text-secondary">8 hours ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Logs -->
+            <div class="col-lg-12">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list text-primary me-2"></i>
+                            System Logs
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" style="width: 150px;">
+                                <option value="all">All Logs</option>
+                                <option value="error">Errors</option>
+                                <option value="warning">Warnings</option>
+                                <option value="info">Information</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="exportLogs()">
+                                <i class="fas fa-download me-1"></i>Export
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">
+                                <i class="fas fa-trash me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="log-container">
+                        <div class="log-entry log-info">
+                            <span class="log-timestamp">2024-01-15 16:05:22</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">User 'john.smith' logged in from 192.168.1.100</span>
+                        </div>
+                        <div class="log-entry log-success">
+                            <span class="log-timestamp">2024-01-15 16:03:45</span>
+                            <span class="log-level">SUCCESS</span>
+                            <span class="log-message">Evidence file 'memory_dump.dmp' analysis completed</span>
+                        </div>
+                        <div class="log-entry log-warning">
+                            <span class="log-timestamp">2024-01-15 16:01:12</span>
+                            <span class="log-level">WARNING</span>
+                            <span class="log-message">High memory usage detected: 89%</span>
+                        </div>
+                        <div class="log-entry log-info">
+                            <span class="log-timestamp">2024-01-15 15:58:33</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Threat intelligence database updated</span>
+                        </div>
+                        <div class="log-entry log-error">
+                            <span class="log-timestamp">2024-01-15 15:55:18</span>
+                            <span class="log-level">ERROR</span>
+                            <span class="log-message">Failed to connect to external API: virustotal.com</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus text-primary me-2"></i>
+                    Add New User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" name="role" required>
+                                <option value="">Select Role</option>
+                                <option value="admin">System Admin</option>
+                                <option value="senior">Senior Investigator</option>
+                                <option value="analyst">Forensics Analyst</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-control" name="department">
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sendWelcomeEmail" checked>
+                                <label class="form-check-label" for="sendWelcomeEmail">
+                                    Send welcome email with login instructions
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i>Add User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupAdminPage();
+    refreshSystemHealth();
+    
+    // Refresh system data every 60 seconds
+    setInterval(refreshSystemHealth, 60000);
+});
+
+function setupAdminPage() {
+    const addUserForm = document.getElementById('addUserForm');
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', handleAddUser);
+    }
+}
+
+function refreshSystemHealth() {
+    // Update CPU usage
+    const cpuProgress = document.querySelector('.health-item:nth-child(1) .health-progress');
+    const newCpuUsage = Math.round(20 + Math.random() * 40);
+    if (cpuProgress) {
+        cpuProgress.style.width = newCpuUsage + '%';
+    }
+    
+    // Update memory usage
+    const memoryProgress = document.querySelector('.health-item:nth-child(2) .health-progress');
+    const newMemoryUsage = Math.round(50 + Math.random() * 30);
+    if (memoryProgress) {
+        memoryProgress.style.width = newMemoryUsage + '%';
+        const memorySpan = memoryProgress.parentNode.previousElementSibling;
+        if (newMemoryUsage > 80) {
+            memorySpan.className = 'text-danger';
+            memorySpan.textContent = 'High';
+            memoryProgress.className = 'health-progress bg-danger';
+        } else if (newMemoryUsage > 60) {
+            memorySpan.className = 'text-warning';
+            memorySpan.textContent = 'Moderate';
+            memoryProgress.className = 'health-progress bg-warning';
+        } else {
+            memorySpan.className = 'text-success';
+            memorySpan.textContent = 'Normal';
+            memoryProgress.className = 'health-progress';
+        }
+    }
+}
+
+function refreshSystemData() {
+    showNotification('info', 'Refreshing system data...');
+    refreshSystemHealth();
+    setTimeout(() => {
+        showNotification('success', 'System data refreshed');
+    }, 1500);
+}
+
+function systemMaintenance() {
+    if (confirm('This will put the system into maintenance mode. Continue?')) {
+        showNotification('warning', 'System entering maintenance mode...');
+    }
+}
+
+function addNewUser() {
+    new bootstrap.Modal(document.getElementById('addUserModal')).show();
+}
+
+async function handleAddUser(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const userData = {
+        first_name: formData.get('first_name'),
+        last_name: formData.get('last_name'),
+        email: formData.get('email'),
+        role: formData.get('role'),
+        department: formData.get('department'),
+        send_welcome: formData.has('sendWelcomeEmail')
+    };
+
+    try {
+        showNotification('info', 'Adding new user...');
+        
+        // Simulate API call
+        setTimeout(() => {
+            showNotification('success', 'User added successfully');
+            bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+            e.target.reset();
+        }, 1500);
+        
+    } catch (error) {
+        showNotification('error', 'Failed to add user: ' + error.message);
+    }
+}
+
+function editUser(userName) {
+    showNotification('info', `Editing user: ${userName}`);
+}
+
+function resetPassword(userName) {
+    if (confirm(`Reset password for ${userName}?`)) {
+        showNotification('success', `Password reset email sent to ${userName}`);
+    }
+}
+
+function suspendUser(userName) {
+    if (confirm(`Suspend user ${userName}?`)) {
+        showNotification('warning', `User ${userName} has been suspended`);
+    }
+}
+
+function exportUsers() {
+    showNotification('info', 'Exporting user list...');
+    setTimeout(() => {
+        showNotification('success', 'User list exported successfully');
+    }, 1000);
+}
+
+function exportLogs() {
+    showNotification('info', 'Exporting system logs...');
+    setTimeout(() => {
+        showNotification('success', 'Logs exported successfully');
+    }, 1000);
+}
+
+function clearLogs() {
+    if (confirm('Clear all system logs? This action cannot be undone.')) {
+        showNotification('warning', 'System logs cleared');
+        document.querySelector('.log-container').innerHTML = '<p class="text-center text-secondary py-4">No log entries</p>';
+    }
+}
+
+function showNotification(type, message) {
+    if (window.forensiq) {
+        window.forensiq.showNotification(type, message);
+    } else {
+        console.log(`${type}: ${message}`);
+    }
+}
+</script>
+{% endblock %}
+{% extends "layout.html" %}
+
+{% block title %}Admin Portal - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-users-cog"></i> Admin Portal
+                </h1>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" id="adminActions" data-bs-toggle="dropdown">
+                        Admin Actions
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fas fa-user-plus"></i> Add User</a></li>
+                        <li><a class="dropdown-item" href="#systemSettings">
+                            <i class="fas fa-cog"></i> System Settings</a></li>
+                        <li><a class="dropdown-item" href="#auditLogs">
+                            <i class="fas fa-file-alt"></i> Audit Logs</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> Database Error: {{ error }}
+                <br><small>Please check the database connection and schema.</small>
+            </div>
+            {% endif %}
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Total Users</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Evidence Items</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_evidence }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-folder-open fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Investigations</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_investigations }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-search fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        System Uptime</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ system_uptime }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-server fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Recent Users -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Recent Users</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Role</th>
+                                            <th>Last Login</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in recent_users %}
+                                        <tr>
+                                            <td>{{ user.name }}</td>
+                                            <td>
+                                                <span class="badge badge-primary">{{ user.role }}</span>
+                                            </td>
+                                            <td>{{ user.last_login }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">System Status</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="small mb-1">Database Status</div>
+                                <div class="progress">
+                                    <div class="progress-bar {% if error %}bg-danger{% else %}bg-success{% endif %}" 
+                                         style="width: {% if error %}25{% else %}100{% endif %}%">
+                                        {% if error %}Error{% else %}Online{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="small mb-1">Application Status</div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width: 100%">Running</div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="small mb-1">Authentication</div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" style="width: 50%">Partial</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn btn-primary btn-block" onclick="window.location.href='/register'">
+                                        <i class="fas fa-user-plus"></i><br>Add User
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn btn-info btn-block" onclick="window.location.href='/investigations'">
+                                        <i class="fas fa-search"></i><br>Manage Cases
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn btn-warning btn-block" onclick="window.location.href='/settings'">
+                                        <i class="fas fa-cog"></i><br>System Settings
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn btn-success btn-block" onclick="generateSystemReport()">
+                                        <i class="fas fa-chart-bar"></i><br>System Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateSystemReport() {
+    alert('System report generation feature coming soon!');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title">Forensic Analysis Report</h2>
+        <div class="report-actions mb-3">
+            <button class="btn btn-primary" onclick="downloadReport()">
+                <i data-feather="download"></i> Download PDF
+            </button>
+            <button class="btn btn-secondary" onclick="copyReport()">
+                <i data-feather="copy"></i> Copy to Clipboard
+            </button>
+        </div>
+        
+        <div class="report-sections">
+            <div class="section">
+                <h3>File Analysis</h3>
+                <div class="metadata-section">
+                    <h4>Metadata</h4>
+                    <pre>{{ evidence.file_metadata | tojson(indent=2) }}</pre>
+                </div>
+                
+                <div class="analysis-section">
+                    <h4>Analysis Results</h4>
+                    <pre>{{ evidence.analysis_results | tojson(indent=2) }}</pre>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Chain of Custody</h3>
+                <div class="timeline">
+                    {% for entry in custody_chain %}
+                    <div class="timeline-item">
+                        <div class="timestamp">{{ entry.timestamp }}</div>
+                        <div class="action">{{ entry.action }}</div>
+                        {% if entry.details %}
+                        <div class="details">{{ entry.details }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="report-header">
+            <p><strong>Report Generated:</strong> {{ evidence.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</p>
+        </div>
+
+        <section class="mt-4">
+            <h3>File Information</h3>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th>Filename</th>
+                        <td>{{ evidence.filename }}</td>
+                    </tr>
+                    <tr>
+                        <th>MD5 Hash</th>
+                        <td><code>{{ evidence.md5_hash }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>SHA-256 Hash</th>
+                        <td><code>{{ evidence.sha256_hash }}</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="mt-4">
+            <h3>Chain of Custody</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in custody_chain %}
+                    <tr>
+                        <td>{{ entry.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+                        <td>{{ entry.action }}</td>
+                        <td>{{ entry.details or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <div class="text-center mt-4">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i data-feather="printer"></i> Print Report
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

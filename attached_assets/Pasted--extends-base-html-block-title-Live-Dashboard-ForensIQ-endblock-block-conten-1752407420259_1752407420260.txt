@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+
+{% block title %}Live Dashboard - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="dashboard-title">Live Forensics Dashboard</h1>
+                    <p class="dashboard-subtitle">
+                        <span class="live-indicator">
+                            <i class="fas fa-circle me-1"></i>LIVE
+                        </span>
+                        Real-time monitoring and analysis
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-outline-primary me-2" onclick="refreshAllData()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="startFullSystemScan()">
+                        <i class="fas fa-search me-1"></i>Full System Scan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health Metrics -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="cpu-usage">
+                    <div class="metric-value">--</div>
+                    <div class="metric-label">CPU Usage</div>
+                    <div class="metric-trend trend-up">↑</div>
+                    <div class="forensics-progress mt-2">
+                        <div class="forensics-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="memory-usage">
+                    <div class="metric-value">--</div>
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-trend trend-up">↑</div>
+                    <div class="forensics-progress mt-2">
+                        <div class="forensics-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="disk-usage">
+                    <div class="metric-value">--</div>
+                    <div class="metric-label">Disk Usage</div>
+                    <div class="metric-trend trend-down">↓</div>
+                    <div class="forensics-progress mt-2">
+                        <div class="forensics-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="active-investigations">
+                    <div class="metric-value">{{ investigations|length }}</div>
+                    <div class="metric-label">Active Investigations</div>
+                    <div class="metric-trend trend-up">↑</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="row g-4">
+            <!-- System Health Chart -->
+            <div class="col-lg-6">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-heartbeat text-primary me-2"></i>
+                            System Health
+                        </h5>
+                        <span class="live-indicator">
+                            <i class="fas fa-circle"></i>LIVE
+                        </span>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="systemHealthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evidence Processing Timeline -->
+            <div class="col-lg-6">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line text-primary me-2"></i>
+                            Evidence Processing
+                        </h5>
+                        <span class="live-indicator">
+                            <i class="fas fa-circle"></i>LIVE
+                        </span>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent AI Findings -->
+            <div class="col-lg-4">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-brain text-primary me-2"></i>
+                            AI Findings
+                        </h5>
+                        <span class="badge bg-danger">{{ ai_findings|length }}</span>
+                    </div>
+                    <div class="ai-findings-list" style="max-height: 400px; overflow-y: auto;">
+                        {% for finding in ai_findings %}
+                        <div class="finding-item forensics-card risk-{{ finding.risk_level }} mb-2">
+                            <div class="finding-header">
+                                <h6 class="mb-1">{{ finding.finding_type|title }}</h6>
+                                <span class="badge badge-{{ finding.risk_level }}">{{ finding.risk_level|upper }}</span>
+                            </div>
+                            <div class="finding-content">
+                                <p class="mb-1 small">{{ finding.description }}</p>
+                                <small class="text-secondary">
+                                    Confidence: {{ (finding.confidence_score * 100)|round }}% | 
+                                    {{ finding.timestamp.strftime('%H:%M:%S') }}
+                                </small>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-secondary py-4">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p>No AI findings detected</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threat Level Monitor -->
+            <div class="col-lg-4">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt text-primary me-2"></i>
+                            Threat Level
+                        </h5>
+                        <span class="live-indicator">
+                            <i class="fas fa-circle"></i>LIVE
+                        </span>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="threatLevelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Activity -->
+            <div class="col-lg-4">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-network-wired text-primary me-2"></i>
+                            Network Activity
+                        </h5>
+                        <span class="live-indicator">
+                            <i class="fas fa-circle"></i>LIVE
+                        </span>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="networkChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Investigations -->
+            <div class="col-lg-8">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-folder-open text-primary me-2"></i>
+                            Recent Investigations
+                        </h5>
+                        <a href="/evidence" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>New Investigation
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table forensics-table">
+                            <thead>
+                                <tr>
+                                    <th>Case Number</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Evidence Items</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for investigation in investigations %}
+                                <tr data-investigation="{{ investigation.id }}">
+                                    <td>
+                                        <span class="font-monospace">{{ investigation.case_number }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ investigation.title }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="status status-{{ investigation.status }}">
+                                            <span class="status-indicator status-{{ 'online' if investigation.status == 'active' else 'offline' }}"></span>
+                                            {{ investigation.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ 'danger' if investigation.priority == 'high' else 'warning' if investigation.priority == 'medium' else 'secondary' }}">
+                                            {{ investigation.priority|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ investigation.evidence_items|length }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-secondary">{{ investigation.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewInvestigation({{ investigation.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success" onclick="joinInvestigation({{ investigation.id }})">
+                                            <i class="fas fa-users"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-secondary py-4">
+                                        <i class="fas fa-folder-open fa-2x mb-2"></i>
+                                        <p>No active investigations</p>
+                                        <a href="/evidence" class="btn btn-primary">
+                                            <i class="fas fa-plus me-1"></i>Start New Investigation
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Alerts -->
+            <div class="col-lg-4">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            System Alerts
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearAlerts()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="alerts-container" style="max-height: 300px; overflow-y: auto;">
+                        {% for metric in health_metrics %}
+                        {% if metric.status != 'healthy' %}
+                        <div class="alert alert-forensics alert-{{ 'warning' if metric.status == 'warning' else 'danger' }} fade-in">
+                            <i class="fas fa-{{ 'exclamation-triangle' if metric.status == 'warning' else 'exclamation-circle' }} me-2"></i>
+                            <strong>{{ metric.metric_name|title }}:</strong> {{ metric.metric_value }}%
+                            <small class="d-block text-secondary">{{ metric.timestamp.strftime('%H:%M:%S') }}</small>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center text-secondary py-4">
+                            <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                            <p>All systems operational</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dashboard-specific functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Join dashboard room for real-time updates
+    if (window.realtime) {
+        window.realtime.joinInvestigation('dashboard');
+    }
+    
+    // Start periodic updates
+    startDashboardUpdates();
+});
+
+function startDashboardUpdates() {
+    // Update system health every 5 seconds
+    setInterval(updateSystemHealth, 5000);
+    
+    // Update metrics every 10 seconds
+    setInterval(updateMetrics, 10000);
+    
+    // Initial update
+    updateSystemHealth();
+}
+
+async function updateSystemHealth() {
+    try {
+        const response = await fetch('/api/system_health');
+        const data = await response.json();
+        
+        // Update CPU usage
+        updateMetricCard('cpu-usage', data.cpu_usage, '%');
+        updateProgressBar('cpu-usage', data.cpu_usage);
+        
+        // Update Memory usage
+        updateMetricCard('memory-usage', data.memory_usage, '%');
+        updateProgressBar('memory-usage', data.memory_usage);
+        
+        // Update Disk usage
+        updateMetricCard('disk-usage', data.disk_usage, '%');
+        updateProgressBar('disk-usage', data.disk_usage);
+        
+    } catch (error) {
+        console.error('Failed to update system health:', error);
+    }
+}
+
+function updateMetricCard(cardId, value, suffix = '') {
+    const card = document.getElementById(cardId);
+    if (card) {
+        const valueElement = card.querySelector('.metric-value');
+        const trendElement = card.querySelector('.metric-trend');
+        
+        if (valueElement) {
+            const oldValue = parseFloat(valueElement.textContent) || 0;
+            valueElement.textContent = Math.round(value) + suffix;
+            
+            // Update trend
+            if (trendElement) {
+                if (value > oldValue) {
+                    trendElement.className = 'metric-trend trend-up';
+                    trendElement.textContent = '↑';
+                } else if (value < oldValue) {
+                    trendElement.className = 'metric-trend trend-down';
+                    trendElement.textContent = '↓';
+                }
+            }
+        }
+    }
+}
+
+function updateProgressBar(cardId, value) {
+    const card = document.getElementById(cardId);
+    if (card) {
+        const progressBar = card.querySelector('.forensics-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = Math.min(value, 100) + '%';
+        }
+    }
+}
+
+async function updateMetrics() {
+    try {
+        // Update various dashboard metrics
+        await updateSystemHealth();
+        
+        // Update charts if they exist
+        if (window.forensiq && window.forensiq.charts) {
+            const charts = window.forensiq.charts;
+            
+            // Update system health chart
+            const healthChart = charts.get('systemHealth');
+            if (healthChart) {
+                // Chart data will be updated by the main forensics.js
+            }
+        }
+        
+    } catch (error) {
+        console.error('Failed to update metrics:', error);
+    }
+}
+
+function viewInvestigation(investigationId) {
+    window.location.href = `/investigation/${investigationId}`;
+}
+
+function joinInvestigation(investigationId) {
+    if (window.realtime) {
+        window.realtime.joinInvestigation(investigationId);
+        if (window.forensiq) {
+            window.forensiq.showNotification('info', `Joined investigation ${investigationId}`);
+        }
+    }
+}
+
+async function refreshAllData() {
+    if (window.forensiq) {
+        window.forensiq.showNotification('info', 'Refreshing dashboard data...');
+    }
+    
+    try {
+        await updateSystemHealth();
+        await updateMetrics();
+        
+        // Refresh page data
+        location.reload();
+        
+    } catch (error) {
+        if (window.forensiq) {
+            window.forensiq.showNotification('error', 'Failed to refresh data');
+        }
+    }
+}
+
+async function startFullSystemScan() {
+    if (window.forensiq) {
+        window.forensiq.showNotification('info', 'Starting full system scan...');
+    }
+    
+    try {
+        // Start device scan
+        await window.forensiq.scanDevices();
+        
+        // Start network scan
+        const networkResponse = await fetch('/api/network_scan');
+        const networkResult = await networkResponse.json();
+        
+        if (window.forensiq) {
+            window.forensiq.showNotification('success', 'Full system scan completed');
+        }
+        
+    } catch (error) {
+        if (window.forensiq) {
+            window.forensiq.showNotification('error', 'System scan failed');
+        }
+    }
+}
+
+function clearAlerts() {
+    const alertsContainer = document.querySelector('.alerts-container');
+    if (alertsContainer) {
+        const alerts = alertsContainer.querySelectorAll('.alert');
+        alerts.forEach(alert => alert.remove());
+    }
+}
+
+// Real-time event handlers
+if (window.realtime) {
+    window.realtime.on('system_health_update', function(data) {
+        updateMetricCard('cpu-usage', data.cpu_usage, '%');
+        updateMetricCard('memory-usage', data.memory_usage, '%');
+        updateMetricCard('disk-usage', data.disk_usage, '%');
+        
+        updateProgressBar('cpu-usage', data.cpu_usage);
+        updateProgressBar('memory-usage', data.memory_usage);
+        updateProgressBar('disk-usage', data.disk_usage);
+    });
+    
+    window.realtime.on('ai_finding_detected', function(data) {
+        // Add new finding to the list
+        const findingsList = document.querySelector('.ai-findings-list');
+        if (findingsList) {
+            const findingElement = document.createElement('div');
+            findingElement.className = `finding-item forensics-card risk-${data.risk_level} mb-2 fade-in`;
+            findingElement.innerHTML = `
+                <div class="finding-header">
+                    <h6 class="mb-1">${data.finding_type}</h6>
+                    <span class="badge badge-${data.risk_level}">${data.risk_level.toUpperCase()}</span>
+                </div>
+                <div class="finding-content">
+                    <p class="mb-1 small">${data.description}</p>
+                    <small class="text-secondary">
+                        Confidence: ${Math.round(data.confidence_score * 100)}% | 
+                        ${new Date().toLocaleTimeString()}
+                    </small>
+                </div>
+            `;
+            findingsList.insertBefore(findingElement, findingsList.firstChild);
+            
+            // Remove oldest if more than 10
+            const findings = findingsList.querySelectorAll('.finding-item');
+            if (findings.length > 10) {
+                findings[findings.length - 1].remove();
+            }
+        }
+    });
+    
+    window.realtime.on('investigation_updated', function(data) {
+        // Update investigation status in table
+        const row = document.querySelector(`[data-investigation="${data.id}"]`);
+        if (row) {
+            const statusCell = row.querySelector('.status');
+            if (statusCell) {
+                statusCell.innerHTML = `
+                    <span class="status-indicator status-${data.status === 'active' ? 'online' : 'offline'}"></span>
+                    ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}
+                `;
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

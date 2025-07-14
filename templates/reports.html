@@ -1,0 +1,557 @@
+
+{% extends "layout.html" %}
+
+{% block title %}Reports & Timeline - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <!-- Reports Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="dashboard-title">Reports & Timeline</h1>
+                    <p class="dashboard-subtitle">
+                        <span class="live-indicator">
+                            <i class="fas fa-circle me-1"></i>LIVE
+                        </span>
+                        Investigation timeline, evidence summary, and automated reporting
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-outline-primary me-2" onclick="refreshReports()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="generateReport()">
+                        <i class="fas fa-file-pdf me-1"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Generation Tools -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <h5>PDF Report</h5>
+                    <p class="text-secondary">Generate comprehensive PDF forensic report</p>
+                    <button class="btn btn-primary" onclick="generatePDFReport()">
+                        <i class="fas fa-file-pdf me-1"></i>Generate PDF
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-file-code"></i>
+                    </div>
+                    <h5>HTML Report</h5>
+                    <p class="text-secondary">Interactive HTML report with visualizations</p>
+                    <button class="btn btn-primary" onclick="generateHTMLReport()">
+                        <i class="fas fa-code me-1"></i>Generate HTML
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-file-csv"></i>
+                    </div>
+                    <h5>CSV Export</h5>
+                    <p class="text-secondary">Export data in CSV format for analysis</p>
+                    <button class="btn btn-primary" onclick="exportCSV()">
+                        <i class="fas fa-download me-1"></i>Export CSV
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="forensics-card text-center h-100">
+                    <div class="card-icon mx-auto">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h5>Timeline View</h5>
+                    <p class="text-secondary">Interactive timeline visualization</p>
+                    <button class="btn btn-primary" onclick="showTimelineView()">
+                        <i class="fas fa-clock me-1"></i>View Timeline
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Investigation Timeline -->
+            <div class="col-lg-8">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            Investigation Timeline
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="timelineFilter" style="width: 150px;">
+                                <option value="all">All Events</option>
+                                <option value="evidence">Evidence</option>
+                                <option value="analysis">Analysis</option>
+                                <option value="findings">Findings</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="exportTimeline()">
+                                <i class="fas fa-download me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="timeline-container">
+                        <div class="timeline-item">
+                            <div class="timeline-marker timeline-marker-info"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <h6>Investigation Started</h6>
+                                    <span class="timeline-time">2024-01-15 09:00:00</span>
+                                </div>
+                                <p class="timeline-description">Investigation case #2024-001 initiated by forensics team</p>
+                                <div class="timeline-meta">
+                                    <span class="badge bg-info">Investigation</span>
+                                    <span class="text-secondary">by Digital Forensics Team</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-marker timeline-marker-success"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <h6>Evidence Uploaded</h6>
+                                    <span class="timeline-time">2024-01-15 09:15:00</span>
+                                </div>
+                                <p class="timeline-description">Memory dump (8GB) uploaded and analyzed</p>
+                                <div class="timeline-meta">
+                                    <span class="badge bg-success">Evidence</span>
+                                    <span class="text-secondary">memory_dump.dmp</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-marker timeline-marker-warning"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <h6>Malware Detected</h6>
+                                    <span class="timeline-time">2024-01-15 09:30:00</span>
+                                </div>
+                                <p class="timeline-description">AI analysis detected potential malware in memory dump</p>
+                                <div class="timeline-meta">
+                                    <span class="badge bg-warning">Finding</span>
+                                    <span class="text-secondary">Confidence: 85%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-marker timeline-marker-danger"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <h6>Threat Intelligence Match</h6>
+                                    <span class="timeline-time">2024-01-15 10:00:00</span>
+                                </div>
+                                <p class="timeline-description">Hash matched known APT29 malware sample</p>
+                                <div class="timeline-meta">
+                                    <span class="badge bg-danger">Threat</span>
+                                    <span class="text-secondary">APT29 - Cozy Bear</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investigation Summary -->
+            <div class="col-lg-4">
+                <div class="forensics-card mb-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-chart-pie text-primary me-2"></i>
+                        Investigation Summary
+                    </h5>
+
+                    <div class="summary-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Total Evidence</span>
+                            <span class="stat-value">{{ evidence_items|length }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">AI Findings</span>
+                            <span class="stat-value">15</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Threat Matches</span>
+                            <span class="stat-value">3</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Critical Issues</span>
+                            <span class="stat-value text-danger">2</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Investigation Time</span>
+                            <span class="stat-value">5h 30m</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <canvas id="findingsChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Key Findings -->
+                <div class="forensics-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Key Findings
+                    </h5>
+
+                    <div class="findings-summary">
+                        <div class="finding-item">
+                            <div class="finding-icon">
+                                <i class="fas fa-virus text-danger"></i>
+                            </div>
+                            <div class="finding-content">
+                                <h6>APT29 Malware</h6>
+                                <p class="text-secondary">Advanced persistent threat detected</p>
+                                <span class="badge bg-danger">Critical</span>
+                            </div>
+                        </div>
+
+                        <div class="finding-item">
+                            <div class="finding-icon">
+                                <i class="fas fa-key text-warning"></i>
+                            </div>
+                            <div class="finding-content">
+                                <h6>Weak Encryption</h6>
+                                <p class="text-secondary">Vulnerable to quantum attacks</p>
+                                <span class="badge bg-warning">High</span>
+                            </div>
+                        </div>
+
+                        <div class="finding-item">
+                            <div class="finding-icon">
+                                <i class="fas fa-network-wired text-info"></i>
+                            </div>
+                            <div class="finding-content">
+                                <h6>Suspicious Network</h6>
+                                <p class="text-secondary">Connections to known C2 servers</p>
+                                <span class="badge bg-info">Medium</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Reports -->
+            <div class="col-lg-12">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt text-primary me-2"></i>
+                            Investigation Reports
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="createNewReport()">
+                            <i class="fas fa-plus me-1"></i>New Report
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table forensics-table">
+                            <thead>
+                                <tr>
+                                    <th>Report Name</th>
+                                    <th>Type</th>
+                                    <th>Investigation</th>
+                                    <th>Generated</th>
+                                    <th>Status</th>
+                                    <th>Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for investigation in investigations %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                                            <div>
+                                                <strong>{{ investigation.filename }} - Full Report</strong>
+                                                <small class="d-block text-secondary">Comprehensive forensic analysis</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-danger">PDF</span></td>
+                                    <td>{{ investigation.filename }}</td>
+                                    <td>{{ investigation.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td><span class="badge bg-success">Complete</span></td>
+                                    <td>2.4 MB</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="viewReport({{ investigation.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success" onclick="downloadReport({{ investigation.id }})">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary" onclick="shareReport({{ investigation.id }})">
+                                                <i class="fas fa-share"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-secondary py-5">
+                                        <i class="fas fa-file-alt fa-3x mb-3"></i>
+                                        <h5>No reports generated yet</h5>
+                                        <p>Create your first investigation report</p>
+                                        <button class="btn btn-primary" onclick="generateReport()">
+                                            <i class="fas fa-file-pdf me-1"></i>Generate Report
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Generation Modal -->
+<div class="modal fade" id="reportGenerationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-pdf text-primary me-2"></i>
+                    Generate Investigation Report
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportGenerationForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Report Type</label>
+                            <select class="form-select" name="report_type">
+                                <option value="comprehensive">Comprehensive Report</option>
+                                <option value="summary">Executive Summary</option>
+                                <option value="technical">Technical Analysis</option>
+                                <option value="timeline">Timeline Report</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Output Format</label>
+                            <select class="form-select" name="output_format">
+                                <option value="pdf">PDF</option>
+                                <option value="html">HTML</option>
+                                <option value="docx">Word Document</option>
+                                <option value="csv">CSV Data</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Investigation</label>
+                            <select class="form-select" name="investigation_id">
+                                {% for investigation in investigations %}
+                                <option value="{{ investigation.id }}">{{ investigation.filename }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-cog me-1"></i>Generate Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let findingsChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupReportsPage();
+    initializeFindingsChart();
+    setupTimelineFilters();
+});
+
+function setupReportsPage() {
+    const reportForm = document.getElementById('reportGenerationForm');
+    if (reportForm) {
+        reportForm.addEventListener('submit', handleReportGeneration);
+    }
+
+    const timelineFilter = document.getElementById('timelineFilter');
+    if (timelineFilter) {
+        timelineFilter.addEventListener('change', filterTimeline);
+    }
+}
+
+function initializeFindingsChart() {
+    const ctx = document.getElementById('findingsChart');
+    if (!ctx) return;
+
+    findingsChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+                data: [2, 5, 6, 2],
+                backgroundColor: [
+                    '#dc3545',
+                    '#fd7e14',
+                    '#ffc107',
+                    '#28a745'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#a0aec0',
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                }
+            }
+        }
+    });
+}
+
+function setupTimelineFilters() {
+    const timelineFilter = document.getElementById('timelineFilter');
+    if (timelineFilter) {
+        timelineFilter.addEventListener('change', filterTimeline);
+    }
+}
+
+function filterTimeline() {
+    const selectedFilter = document.getElementById('timelineFilter').value;
+    const timelineItems = document.querySelectorAll('.timeline-item');
+
+    timelineItems.forEach(item => {
+        const badge = item.querySelector('.badge');
+        if (badge) {
+            const badgeText = badge.textContent.toLowerCase();
+            
+            if (selectedFilter === 'all' || badgeText.includes(selectedFilter)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        }
+    });
+}
+
+async function handleReportGeneration(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const reportData = {
+        report_type: formData.get('report_type'),
+        output_format: formData.get('output_format'),
+        investigation_id: formData.get('investigation_id'),
+        sections: formData.getAll('sections')
+    };
+
+    try {
+        showNotification('info', 'Generating report...');
+        
+        const response = await fetch('/api/generate-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(reportData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('success', 'Report generated successfully');
+            bootstrap.Modal.getInstance(document.getElementById('reportGenerationModal')).hide();
+            refreshReports();
+        } else {
+            showNotification('error', 'Report generation failed: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Report generation error:', error);
+        showNotification('error', 'Report generation failed: ' + error.message);
+    }
+}
+
+function generateReport() {
+    new bootstrap.Modal(document.getElementById('reportGenerationModal')).show();
+}
+
+function generatePDFReport() {
+    showNotification('info', 'Generating PDF report...');
+}
+
+function generateHTMLReport() {
+    showNotification('info', 'Generating HTML report...');
+}
+
+function exportCSV() {
+    showNotification('info', 'Exporting data to CSV...');
+}
+
+function showTimelineView() {
+    showNotification('info', 'Opening timeline view...');
+}
+
+function refreshReports() {
+    location.reload();
+}
+
+function viewReport(reportId) {
+    window.open(`/report/${reportId}`, '_blank');
+}
+
+function downloadReport(reportId) {
+    showNotification('info', `Downloading report ${reportId}...`);
+}
+
+function shareReport(reportId) {
+    showNotification('info', `Sharing report ${reportId}...`);
+}
+
+function createNewReport() {
+    generateReport();
+}
+
+function exportTimeline() {
+    showNotification('info', 'Exporting timeline...');
+}
+
+function showNotification(type, message) {
+    if (window.forensiq) {
+        window.forensiq.showNotification(type, message);
+    } else {
+        console.log(`${type}: ${message}`);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,299 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="wifi"></i> Network Analysis & PCAP Forensics</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="analysis_type" class="form-label">Analysis Type</label>
+                        <select class="form-select" id="analysis_type" name="analysis_type" required>
+                            <option value="">Select analysis type...</option>
+                            <option value="pcap_analysis">PCAP Analysis</option>
+                            <option value="browser_history">Browser History</option>
+                            <option value="email_analysis">Email Analysis</option>
+                        </select>
+                    </div>
+                    
+                    <div id="pcap-config" class="mb-3" style="display: none;">
+                        <label for="pcap_file" class="form-label">Upload PCAP File</label>
+                        <input type="file" class="form-control" id="pcap_file" name="pcap_file" accept=".pcap,.pcapng,.cap">
+                        
+                        <label class="form-label mt-2">Analysis Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="sessions" id="sessions" name="analysis_options" checked>
+                            <label class="form-check-label" for="sessions">Session Reconstruction</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="protocols" id="protocols" name="analysis_options" checked>
+                            <label class="form-check-label" for="protocols">Protocol Analysis</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="endpoints" id="endpoints" name="analysis_options" checked>
+                            <label class="form-check-label" for="endpoints">Endpoint Analysis</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="files" id="files" name="analysis_options">
+                            <label class="form-check-label" for="files">File Extraction</label>
+                        </div>
+                    </div>
+                    
+                    <div id="browser-config" class="mb-3" style="display: none;">
+                        <label for="browser_type" class="form-label">Browser Type</label>
+                        <select class="form-select" id="browser_type" name="browser_type">
+                            <option value="chrome">Google Chrome</option>
+                            <option value="firefox">Mozilla Firefox</option>
+                            <option value="edge">Microsoft Edge</option>
+                            <option value="safari">Apple Safari</option>
+                        </select>
+                        
+                        <div class="alert alert-info mt-2">
+                            <small><i data-feather="info"></i> Analysis will be performed on simulated browser history data for demonstration.</small>
+                        </div>
+                    </div>
+                    
+                    <div id="email-config" class="mb-3" style="display: none;">
+                        <label for="email_client" class="form-label">Email Client</label>
+                        <select class="form-select" id="email_client" name="email_client">
+                            <option value="outlook">Microsoft Outlook</option>
+                            <option value="thunderbird">Mozilla Thunderbird</option>
+                            <option value="apple_mail">Apple Mail</option>
+                            <option value="gmail">Gmail</option>
+                        </select>
+                        
+                        <div class="alert alert-info mt-2">
+                            <small><i data-feather="info"></i> Analysis will be performed on simulated email data for demonstration.</small>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="search"></i> Analyze
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="activity"></i> Analysis Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+            </div>
+            <div class="card-body">
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ results.error }}
+                </div>
+                {% else %}
+                
+                {% if analysis_type == 'pcap_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>PCAP Information</h6>
+                        {% if results.pcap_info %}
+                        <p><strong>File Size:</strong> {{ results.pcap_info.file_size }}</p>
+                        <p><strong>Packet Count:</strong> {{ results.pcap_info.packet_count }}</p>
+                        <p><strong>Capture Duration:</strong> {{ results.pcap_info.capture_duration }}</p>
+                        <p><strong>Unique IPs:</strong> {{ results.pcap_info.unique_ips }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Protocol Distribution</h6>
+                        {% if results.protocol_breakdown %}
+                        {% for protocol, data in results.protocol_breakdown.items() %}
+                        <div class="progress mb-2">
+                            <div class="progress-bar" role="progressbar" style="width: {{ data.percentage }}%">
+                                {{ protocol }}: {{ data.percentage }}%
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.session_reconstruction %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Session Reconstruction</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Session ID</th>
+                                        <th>Protocol</th>
+                                        <th>Source</th>
+                                        <th>Destination</th>
+                                        <th>Bytes</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in results.session_reconstruction[:10] %}
+                                    <tr>
+                                        <td>{{ session.session_id }}</td>
+                                        <td><span class="badge bg-primary">{{ session.protocol }}</span></td>
+                                        <td>{{ session.src_ip }}:{{ session.src_port }}</td>
+                                        <td>{{ session.dst_ip }}:{{ session.dst_port }}</td>
+                                        <td>{{ session.bytes_transferred }}</td>
+                                        <td>{{ session.duration }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.suspicious_traffic %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Suspicious Traffic</h6>
+                        {% for traffic in results.suspicious_traffic %}
+                        <div class="alert alert-{{ 'danger' if traffic.severity == 'high' else 'warning' }}">
+                            <strong>{{ traffic.type.replace('_', ' ').title() }}</strong><br>
+                            {{ traffic.description }}
+                            <div class="small">Source: {{ traffic.source_ip }} | Time: {{ traffic.timestamp }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'browser_history' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Browsing Summary</h6>
+                        {% if results.history_analysis %}
+                        <p><strong>Total Visits:</strong> {{ results.history_analysis.total_visits }}</p>
+                        <p><strong>Unique URLs:</strong> {{ results.history_analysis.unique_urls }}</p>
+                        <p><strong>Peak Hours:</strong> {{ results.history_analysis.time_patterns.peak_hours|join(', ') }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Top Visited Sites</h6>
+                        {% if results.history_analysis.most_visited_sites %}
+                        {% for site in results.history_analysis.most_visited_sites %}
+                        <div class="d-flex justify-content-between">
+                            <span>{{ site.url }}</span>
+                            <span class="badge bg-secondary">{{ site.visit_count }}</span>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.download_analysis %}
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Downloads</h6>
+                        <p><strong>Total Downloads:</strong> {{ results.download_analysis.total_downloads }}</p>
+                        {% for file_type, count in results.download_analysis.file_types.items() %}
+                        <div class="small">{{ file_type.upper() }}: {{ count }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Suspicious Downloads</h6>
+                        {% if results.download_analysis.suspicious_downloads %}
+                        {% for download in results.download_analysis.suspicious_downloads %}
+                        <div class="alert alert-warning p-2">
+                            <strong>{{ download.filename }}</strong><br>
+                            <div class="small">Source: {{ download.source_url }}</div>
+                            <div class="small">Risk: {{ download.risk_level.title() }}</div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">No suspicious downloads detected</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'email_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Email Summary</h6>
+                        {% if results.message_analysis %}
+                        <p><strong>Total Messages:</strong> {{ results.message_analysis.total_messages }}</p>
+                        <p><strong>Sent:</strong> {{ results.message_analysis.sent_messages }}</p>
+                        <p><strong>Received:</strong> {{ results.message_analysis.received_messages }}</p>
+                        <p><strong>With Attachments:</strong> {{ results.message_analysis.attachment_summary.messages_with_attachments }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Contact Analysis</h6>
+                        {% if results.contact_analysis %}
+                        <p><strong>Unique Contacts:</strong> {{ results.contact_analysis.unique_contacts }}</p>
+                        {% for contact in results.contact_analysis.most_frequent_contacts[:3] %}
+                        <div class="small">{{ contact.email }} ({{ contact.message_count }} messages)</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.suspicious_emails %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Suspicious Emails</h6>
+                        {% for email in results.suspicious_emails %}
+                        <div class="alert alert-{{ 'danger' if email.risk_level == 'critical' else 'warning' }}">
+                            <strong>{{ email.type.replace('_', ' ').title() }}</strong><br>
+                            From: {{ email.sender }}<br>
+                            Subject: {{ email.subject }}<br>
+                            <div class="small">Risk Level: {{ email.risk_level.title() }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="wifi" class="text-muted" style="width: 64px; height: 64px;"></i>
+                <p class="text-muted mt-3">Select an analysis type to begin network and communication forensics investigation.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const analysisType = this.value;
+    const pcapConfig = document.getElementById('pcap-config');
+    const browserConfig = document.getElementById('browser-config');
+    const emailConfig = document.getElementById('email-config');
+    
+    // Hide all config sections
+    pcapConfig.style.display = 'none';
+    browserConfig.style.display = 'none';
+    emailConfig.style.display = 'none';
+    
+    // Show relevant config section
+    if (analysisType === 'pcap_analysis') {
+        pcapConfig.style.display = 'block';
+    } else if (analysisType === 'browser_history') {
+        browserConfig.style.display = 'block';
+    } else if (analysisType === 'email_analysis') {
+        emailConfig.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

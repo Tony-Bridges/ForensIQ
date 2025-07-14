@@ -1,0 +1,58 @@
+I. 🧠 AI-Powered Intelligence
+Feature	Description
+Automated Anomaly Detection	ML models for behavioral baselining, privilege escalation, lateral movement patterns
+Malware Classification (Behavioral & Static)	ML/AI for unknown malware triage based on action or signature
+NLP-Based Entity & Context Extraction	Search understands “John’s emails on June 1st mentioning money”
+Predictive Forensics	Anticipate likely compromise zones using historical incident data
+Media Authenticity Verification	Deepfake detection for audio/video/image evidence
+
+II. ☁️ Cloud, Virtual, and Container Forensics
+Feature	Description
+Multi-Cloud Acquisition	AWS, Azure, GCP, OneDrive, Dropbox, including IAM, S3, cloud logs
+Volatile Cloud Capture	Live logs, temporary containers, function memory dumps
+Kubernetes & Docker Analysis	Parse pod/container logs, mounted volumes, orchestration metadata
+Serverless & Microservice Tracing	Forensics across Lambda, Azure Functions, GCP Cloud Functions
+VM & VDI Disk Parsing	Analysis for VMware, Hyper-V, Citrix, and VirtualBox formats
+
+III. 📱 Mobile, IoT, and Embedded Device Forensics
+Feature	Description
+Advanced Mobile Acquisition	Secure Enclave bypass, full disk extraction, chat & social media scraping
+IoT Data Interpretation	Smart homes, wearables, car infotainment, ICS/SCADA forensics
+Telematics & Vehicle Logs	Vehicle GPS history, call logs, voice commands, and driver behavior reconstruction
+
+IV. 🧬 Live & Endpoint Forensics + IR Integration
+Feature	Description
+Real-Time Endpoint Monitoring	Forensic hooks on running systems to detect ransomware, keyloggers, etc.
+Remote Acquisition & Triage	Agent-based/agentless imaging and analysis over secure channels
+Automated Containment Suggestions	Post-forensic analysis offers or executes remediation strategies
+
+V. 🔓 Encryption, Stego, and Evasion Analysis
+Feature	Description
+Encrypted Volume & File Detection	VeraCrypt, BitLocker, passworded RARs, mobile encrypted databases
+Steganography Detection	Pixel-level audio/image analysis for hidden data
+Rootkit & Fileless Malware Detection	Memory analysis, hidden registry keys, and DLL injection scanning
+
+VI. 🔗 Chain of Custody, Visualization, & Legal Presentation
+Feature	Description
+Immutable Chain-of-Custody Logging	Blockchain or signed hash logs for audit-proof evidence trails
+Courtroom-Ready Presentation Mode	Timeline playback, evidence visualization, expert mode with annotations
+Secure Investigator Collaboration	Multi-user session support with encrypted case-sharing protocols
+
+VII. 🪙 Blockchain, Crypto, and NFT Forensics
+Feature	Description
+Wallet & Txn Tracing	Connect transactions across BTC, ETH, Monero with heuristics for KYC linking
+Smart Contract Dissection	Detect honeypots, backdoors, and vulnerabilities in on-chain logic
+NFT Authenticity & Ownership Trail	Verify provenance, creator, and potential digital forgery or laundering via NFTs
+
+VIII. 📊 Advanced Reporting & Intelligence Feeds
+Feature	Description
+Dynamic, Interactive Reports	Stakeholder-friendly HTML+PDF reports with live artifact drilldown
+Integration with MISP, VirusTotal, AbuseIPDB, etc.	Auto-tagging and IOC matching
+Graph-Based Timeline & Relationship Explorer	Link people, devices, files, and events over time visually
+
+🧩 Optional Modular Architecture (Recommendation)
+Core Engine: File System, Memory, and Timeline analysis
+
+Modules: Cloud Forensics, Crypto Analysis, IoT, Mobile, IR Toolkit
+
+Extension Layer: Plugins (YARA, VirusTotal, AI Triage), Export APIs, NLP Query Interface

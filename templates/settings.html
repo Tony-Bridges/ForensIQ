@@ -1,0 +1,674 @@
+
+{% extends "layout.html" %}
+
+{% block title %}Settings - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <!-- Settings Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="dashboard-title">Settings & Configuration</h1>
+                    <p class="dashboard-subtitle">
+                        Configure ForensIQ platform settings, security, and integrations
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-primary" onclick="saveAllSettings()">
+                        <i class="fas fa-save me-1"></i>Save All Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Settings Navigation -->
+            <div class="col-lg-3">
+                <div class="forensics-card">
+                    <h5 class="mb-3">Settings Categories</h5>
+                    <div class="list-group list-group-flush">
+                        <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="pill">
+                            <i class="fas fa-cog me-2"></i>General
+                        </a>
+                        <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                            <i class="fas fa-shield-alt me-2"></i>Security
+                        </a>
+                        <a href="#analysis" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                            <i class="fas fa-brain me-2"></i>Analysis Engine
+                        </a>
+                        <a href="#integrations" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                            <i class="fas fa-plug me-2"></i>Integrations
+                        </a>
+                        <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                            <i class="fas fa-bell me-2"></i>Notifications
+                        </a>
+                        <a href="#storage" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                            <i class="fas fa-database me-2"></i>Storage
+                        </a>
+                        <a href="#advanced" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                            <i class="fas fa-tools me-2"></i>Advanced
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="col-lg-9">
+                <div class="tab-content">
+                    <!-- General Settings -->
+                    <div class="tab-pane fade show active" id="general">
+                        <div class="forensics-card">
+                            <h5 class="mb-4">
+                                <i class="fas fa-cog text-primary me-2"></i>
+                                General Settings
+                            </h5>
+                            
+                            <form id="generalSettings">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Organization Name</label>
+                                        <input type="text" class="form-control" value="Digital Forensics Division" name="org_name">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Timezone</label>
+                                        <select class="form-select" name="timezone">
+                                            <option value="UTC">UTC</option>
+                                            <option value="EST">Eastern Time</option>
+                                            <option value="PST">Pacific Time</option>
+                                            <option value="GMT">Greenwich Mean Time</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Date Format</label>
+                                        <select class="form-select" name="date_format">
+                                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                            <option value="YYYY-MM-DD" selected>YYYY-MM-DD</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Time Format</label>
+                                        <select class="form-select" name="time_format">
+                                            <option value="12h">12 Hour</option>
+                                            <option value="24h" selected>24 Hour</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Default Investigation Timeout</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" value="24" name="investigation_timeout">
+                                            <span class="input-group-text">hours</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="autoBackup" checked>
+                                            <label class="form-check-label" for="autoBackup">
+                                                Enable automatic evidence backup
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="tab-pane fade" id="security">
+                        <div class="forensics-card">
+                            <h5 class="mb-4">
+                                <i class="fas fa-shield-alt text-primary me-2"></i>
+                                Security Configuration
+                            </h5>
+                            
+                            <form id="securitySettings">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <h6>Authentication</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="mfaRequired" checked>
+                                                    <label class="form-check-label" for="mfaRequired">
+                                                        Require Multi-Factor Authentication
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="ssoEnabled">
+                                                    <label class="form-check-label" for="ssoEnabled">
+                                                        Enable Single Sign-On
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-12">
+                                        <h6>Password Policy</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Minimum Password Length</label>
+                                                <input type="number" class="form-control" value="12" min="8" max="32">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Password Expiry (days)</label>
+                                                <input type="number" class="form-control" value="90" min="30" max="365">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="complexPassword" checked>
+                                                    <label class="form-check-label" for="complexPassword">
+                                                        Require complex passwords (uppercase, lowercase, numbers, symbols)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <h6>Encryption</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Evidence Encryption</label>
+                                                <select class="form-select">
+                                                    <option value="aes256">AES-256</option>
+                                                    <option value="aes128">AES-128</option>
+                                                    <option value="post-quantum" selected>Post-Quantum Ready</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Database Encryption</label>
+                                                <select class="form-select">
+                                                    <option value="enabled" selected>Enabled</option>
+                                                    <option value="disabled">Disabled</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Engine Settings -->
+                    <div class="tab-pane fade" id="analysis">
+                        <div class="forensics-card">
+                            <h5 class="mb-4">
+                                <i class="fas fa-brain text-primary me-2"></i>
+                                Analysis Engine Configuration
+                            </h5>
+                            
+                            <form id="analysisSettings">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <h6>AI Analysis</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Detection Sensitivity</label>
+                                                <select class="form-select">
+                                                    <option value="low">Low</option>
+                                                    <option value="medium" selected>Medium</option>
+                                                    <option value="high">High</option>
+                                                    <option value="aggressive">Aggressive</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Confidence Threshold</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" value="75" min="50" max="95">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="autoAnalysis" checked>
+                                                    <label class="form-check-label" for="autoAnalysis">
+                                                        Enable automatic analysis on evidence upload
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <h6>Enabled Analysis Modules</h6>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="malwareDetection" checked>
+                                                    <label class="form-check-label" for="malwareDetection">Malware Detection</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="behaviorAnalysis" checked>
+                                                    <label class="form-check-label" for="behaviorAnalysis">Behavior Analysis</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="networkAnalysis" checked>
+                                                    <label class="form-check-label" for="networkAnalysis">Network Analysis</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="cryptoAnalysis" checked>
+                                                    <label class="form-check-label" for="cryptoAnalysis">Crypto Analysis</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Integrations -->
+                    <div class="tab-pane fade" id="integrations">
+                        <div class="forensics-card">
+                            <h5 class="mb-4">
+                                <i class="fas fa-plug text-primary me-2"></i>
+                                External Integrations
+                            </h5>
+                            
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="integration-item">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-shield-virus text-primary me-2"></i>
+                                                <div>
+                                                    <h6 class="mb-0">VirusTotal</h6>
+                                                    <small class="text-secondary">Threat intelligence platform</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="virusTotal" checked>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">API Key</label>
+                                            <input type="password" class="form-control" placeholder="Enter API key">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="integration-item">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-cloud text-primary me-2"></i>
+                                                <div>
+                                                    <h6 class="mb-0">MISP</h6>
+                                                    <small class="text-secondary">Malware information sharing</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="misp">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Server URL</label>
+                                            <input type="url" class="form-control" placeholder="https://misp.example.com">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="integration-item">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-search text-primary me-2"></i>
+                                                <div>
+                                                    <h6 class="mb-0">Shodan</h6>
+                                                    <small class="text-secondary">Internet device search engine</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="shodan">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">API Key</label>
+                                            <input type="password" class="form-control" placeholder="Enter API key">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="integration-item">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fab fa-slack text-primary me-2"></i>
+                                                <div>
+                                                    <h6 class="mb-0">Slack</h6>
+                                                    <small class="text-secondary">Team notifications</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="slack">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Webhook URL</label>
+                                            <input type="url" class="form-control" placeholder="https://hooks.slack.com/...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="tab-pane fade" id="notifications">
+                        <div class="forensics-card">
+                            <h5 class="mb-4">
+                                <i class="fas fa-bell text-primary me-2"></i>
+                                Notification Settings
+                            </h5>
+                            
+                            <form id="notificationSettings">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <h6>Email Notifications</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="emailThreats" checked>
+                                                    <label class="form-check-label" for="emailThreats">Threat Detection</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="emailReports" checked>
+                                                    <label class="form-check-label" for="emailReports">Report Generation</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="emailErrors">
+                                                    <label class="form-check-label" for="emailErrors">System Errors</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="emailDigest" checked>
+                                                    <label class="form-check-label" for="emailDigest">Daily Digest</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <h6>Alert Thresholds</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Critical Alert Threshold</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" value="90" min="70" max="100">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Warning Alert Threshold</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" value="75" min="50" max="90">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Storage Settings -->
+                    <div class="tab-pane fade" id="storage">
+                        <div class="forensics-card">
+                            <h5 class="mb-4">
+                                <i class="fas fa-database text-primary me-2"></i>
+                                Storage Configuration
+                            </h5>
+                            
+                            <form id="storageSettings">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <h6>Evidence Storage</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Primary Storage Location</label>
+                                                <input type="text" class="form-control" value="/evidence/primary">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Backup Storage Location</label>
+                                                <input type="text" class="form-control" value="/evidence/backup">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Retention Period</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" value="7" min="1">
+                                                    <select class="form-select">
+                                                        <option value="years" selected>Years</option>
+                                                        <option value="months">Months</option>
+                                                        <option value="days">Days</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Compression Level</label>
+                                                <select class="form-select">
+                                                    <option value="none">None</option>
+                                                    <option value="low">Low</option>
+                                                    <option value="medium" selected>Medium</option>
+                                                    <option value="high">High</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <h6>Storage Monitoring</h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="storage-metric">
+                                                    <div class="storage-value">2.4 TB</div>
+                                                    <div class="storage-label">Used Space</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="storage-metric">
+                                                    <div class="storage-value">7.6 TB</div>
+                                                    <div class="storage-label">Available Space</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="storage-metric">
+                                                    <div class="storage-value">76%</div>
+                                                    <div class="storage-label">Health Status</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="tab-pane fade" id="advanced">
+                        <div class="forensics-card">
+                            <h5 class="mb-4">
+                                <i class="fas fa-tools text-primary me-2"></i>
+                                Advanced Configuration
+                            </h5>
+                            
+                            <form id="advancedSettings">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <h6>API Settings</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">API Rate Limit</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" value="1000">
+                                                    <span class="input-group-text">requests/hour</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">API Timeout</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" value="30">
+                                                    <span class="input-group-text">seconds</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <h6>Debug Settings</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="debugMode">
+                                                    <label class="form-check-label" for="debugMode">Enable Debug Mode</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="verboseLogging">
+                                                    <label class="form-check-label" for="verboseLogging">Verbose Logging</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <h6>System Maintenance</h6>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-outline-warning" onclick="clearCache()">
+                                                <i class="fas fa-broom me-1"></i>Clear Cache
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" onclick="exportSettings()">
+                                                <i class="fas fa-download me-1"></i>Export Settings
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="importSettings()">
+                                                <i class="fas fa-upload me-1"></i>Import Settings
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupSettingsPage();
+});
+
+function setupSettingsPage() {
+    // Handle tab switching
+    document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetTab = document.querySelector(this.getAttribute('href'));
+            
+            // Hide all tabs
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            
+            // Show target tab
+            targetTab.classList.add('show', 'active');
+            
+            // Update active tab
+            document.querySelectorAll('[data-bs-toggle="pill"]').forEach(t => {
+                t.classList.remove('active');
+            });
+            this.classList.add('active');
+        });
+    });
+}
+
+function saveAllSettings() {
+    showNotification('info', 'Saving all settings...');
+    
+    // Simulate save operation
+    setTimeout(() => {
+        showNotification('success', 'All settings saved successfully');
+    }, 1500);
+}
+
+function clearCache() {
+    if (confirm('Are you sure you want to clear the system cache?')) {
+        showNotification('info', 'Clearing cache...');
+        setTimeout(() => {
+            showNotification('success', 'Cache cleared successfully');
+        }, 1000);
+    }
+}
+
+function exportSettings() {
+    showNotification('info', 'Exporting settings...');
+    // Create a mock settings file
+    const settings = {
+        general: { timezone: 'UTC', dateFormat: 'YYYY-MM-DD' },
+        security: { mfaRequired: true, passwordLength: 12 },
+        analysis: { sensitivity: 'medium', threshold: 75 }
+    };
+    
+    const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'forensiq-settings.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('success', 'Settings exported successfully');
+}
+
+function importSettings() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const settings = JSON.parse(e.target.result);
+                    showNotification('success', 'Settings imported successfully');
+                } catch (error) {
+                    showNotification('error', 'Invalid settings file');
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+function showNotification(type, message) {
+    if (window.forensiq) {
+        window.forensiq.showNotification(type, message);
+    } else {
+        console.log(`${type}: ${message}`);
+    }
+}
+</script>
+{% endblock %}

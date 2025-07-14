@@ -1,0 +1,378 @@
+
+{% extends "layout.html" %}
+
+{% block title %}Live Dashboard - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="dashboard-title">Live Forensics Dashboard</h1>
+                    <p class="dashboard-subtitle">
+                        <span class="live-indicator">
+                            <i class="fas fa-circle me-1"></i>LIVE
+                        </span>
+                        Real-time monitoring and analysis
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-outline-primary me-2" onclick="refreshAllData()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="startFullSystemScan()">
+                        <i class="fas fa-search me-1"></i>Full System Scan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health Metrics -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="cpu-usage">
+                    <div class="metric-value">{{ system_health.cpu_usage }}%</div>
+                    <div class="metric-label">CPU Usage</div>
+                    <div class="metric-trend trend-up">↑</div>
+                    <div class="forensics-progress mt-2">
+                        <div class="forensics-progress-bar" style="width: {{ system_health.cpu_usage }}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="memory-usage">
+                    <div class="metric-value">{{ system_health.memory_usage }}%</div>
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-trend trend-stable">→</div>
+                    <div class="forensics-progress mt-2">
+                        <div class="forensics-progress-bar" style="width: {{ system_health.memory_usage }}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="active-processes">
+                    <div class="metric-value">{{ active_investigations }}</div>
+                    <div class="metric-label">Active Investigations</div>
+                    <div class="metric-trend trend-up">↑</div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card" id="threat-level">
+                    <div class="metric-value text-success">LOW</div>
+                    <div class="metric-label">Threat Level</div>
+                    <div class="metric-trend trend-down">↓</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investigation Overview -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line text-primary me-2"></i>
+                            Investigation Activity
+                        </h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary active" data-period="24h">24H</button>
+                            <button class="btn btn-outline-secondary" data-period="7d">7D</button>
+                            <button class="btn btn-outline-secondary" data-period="30d">30D</button>
+                        </div>
+                    </div>
+                    <canvas id="activityChart" height="300"></canvas>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="forensics-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-bell text-warning me-2"></i>
+                        Recent Alerts
+                    </h5>
+                    <div class="alert-list">
+                        {% for alert in recent_alerts %}
+                        <div class="alert-item">
+                            <div class="alert-icon">
+                                {% if alert.type == 'warning' %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                {% elif alert.type == 'info' %}
+                                <i class="fas fa-info-circle text-info"></i>
+                                {% else %}
+                                <i class="fas fa-check-circle text-success"></i>
+                                {% endif %}
+                            </div>
+                            <div class="alert-content">
+                                <p class="mb-1">{{ alert.message }}</p>
+                                <small class="text-secondary">{{ alert.timestamp }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i>View All Alerts
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evidence and Findings -->
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-database text-primary me-2"></i>
+                            Recent Evidence
+                        </h5>
+                        <a href="/analyze" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus me-1"></i>Add Evidence
+                        </a>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table forensics-table">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Added</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for evidence in evidence_list[:5] %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file text-secondary me-2"></i>
+                                            <div>
+                                                <strong>{{ evidence.filename }}</strong>
+                                                <small class="d-block text-secondary">{{ evidence.md5_hash[:8] }}...</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">File</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">Analyzed</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ evidence.timestamp.strftime('%m/%d %H:%M') }}</small>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-secondary py-4">
+                                        No evidence uploaded yet
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="forensics-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-brain text-primary me-2"></i>
+                            AI Findings
+                        </h5>
+                        <span class="badge bg-primary">{{ ai_findings }} Active</span>
+                    </div>
+                    
+                    <div class="findings-list">
+                        <div class="finding-item risk-high">
+                            <div class="finding-header">
+                                <strong>Malware Detected</strong>
+                                <span class="badge bg-danger">Critical</span>
+                            </div>
+                            <p class="text-secondary mb-1">Suspicious binary detected in memory dump</p>
+                            <small class="text-secondary">5 minutes ago</small>
+                        </div>
+                        
+                        <div class="finding-item risk-medium">
+                            <div class="finding-header">
+                                <strong>Unusual Network Activity</strong>
+                                <span class="badge bg-warning">Medium</span>
+                            </div>
+                            <p class="text-secondary mb-1">Connections to unknown IP addresses</p>
+                            <small class="text-secondary">12 minutes ago</small>
+                        </div>
+                        
+                        <div class="finding-item risk-low">
+                            <div class="finding-header">
+                                <strong>File Hash Match</strong>
+                                <span class="badge bg-info">Info</span>
+                            </div>
+                            <p class="text-secondary mb-1">File matched threat intelligence database</p>
+                            <small class="text-secondary">18 minutes ago</small>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-search me-1"></i>View All Findings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let activityChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDashboard();
+    initializeActivityChart();
+    
+    // Refresh data every 30 seconds
+    setInterval(refreshDashboardData, 30000);
+});
+
+function initializeDashboard() {
+    // Setup period buttons
+    document.querySelectorAll('[data-period]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            updateActivityChart(this.dataset.period);
+        });
+    });
+}
+
+function initializeActivityChart() {
+    const ctx = document.getElementById('activityChart');
+    if (!ctx) return;
+
+    activityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+            datasets: [{
+                label: 'Evidence Analyzed',
+                data: [2, 1, 5, 8, 12, 7, 3],
+                borderColor: '#00a2ff',
+                backgroundColor: 'rgba(0, 162, 255, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Threats Detected',
+                data: [0, 0, 1, 2, 3, 1, 0],
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#a0aec0'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#a0aec0' },
+                    grid: { color: '#374151' }
+                },
+                y: {
+                    ticks: { color: '#a0aec0' },
+                    grid: { color: '#374151' }
+                }
+            }
+        }
+    });
+}
+
+function updateActivityChart(period) {
+    if (!activityChart) return;
+    
+    // Mock data for different periods
+    const data = {
+        '24h': {
+            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+            evidence: [2, 1, 5, 8, 12, 7, 3],
+            threats: [0, 0, 1, 2, 3, 1, 0]
+        },
+        '7d': {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            evidence: [25, 32, 28, 45, 52, 18, 12],
+            threats: [2, 3, 1, 5, 7, 2, 1]
+        },
+        '30d': {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            evidence: [120, 145, 132, 189],
+            threats: [8, 12, 6, 15]
+        }
+    };
+    
+    const selectedData = data[period];
+    activityChart.data.labels = selectedData.labels;
+    activityChart.data.datasets[0].data = selectedData.evidence;
+    activityChart.data.datasets[1].data = selectedData.threats;
+    activityChart.update();
+}
+
+function refreshAllData() {
+    showNotification('info', 'Refreshing dashboard data...');
+    refreshDashboardData();
+}
+
+function refreshDashboardData() {
+    // Update CPU usage
+    const cpuElement = document.querySelector('#cpu-usage .metric-value');
+    const newCpuUsage = Math.round(20 + Math.random() * 40);
+    if (cpuElement) {
+        cpuElement.textContent = newCpuUsage + '%';
+        const progressBar = document.querySelector('#cpu-usage .forensics-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = newCpuUsage + '%';
+        }
+    }
+    
+    // Update memory usage
+    const memoryElement = document.querySelector('#memory-usage .metric-value');
+    const newMemoryUsage = Math.round(50 + Math.random() * 30);
+    if (memoryElement) {
+        memoryElement.textContent = newMemoryUsage + '%';
+        const progressBar = document.querySelector('#memory-usage .forensics-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = newMemoryUsage + '%';
+        }
+    }
+}
+
+function startFullSystemScan() {
+    showNotification('info', 'Starting full system scan...');
+    // Implementation for full system scan
+}
+
+function showNotification(type, message) {
+    if (window.forensiq) {
+        window.forensiq.showNotification(type, message);
+    } else {
+        console.log(`${type}: ${message}`);
+    }
+}
+</script>
+{% endblock %}

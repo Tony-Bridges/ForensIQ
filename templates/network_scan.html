@@ -1,0 +1,58 @@
+
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Network Scanner</h2>
+                
+                <div class="alert alert-info">
+                    <i data-feather="search"></i> 
+                    <span>Scanning network for active devices and open ports...</span>
+                    <div class="progress mt-2">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                {% if devices %}
+                    <div class="row">
+                        {% for device in devices %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ device.hostname }}</h5>
+                                    <p><strong>IP:</strong> {{ device.ip }}</p>
+                                    <p><strong>Status:</strong> {{ device.status }}</p>
+                                    {% if device.open_ports %}
+                                    <div>
+                                        <strong>Open Ports:</strong>
+                                        <ul>
+                                        {% for port in device.open_ports %}
+                                            <li>Port {{ port }}: {{ device.services[port].name if device.services[port].name else 'Unknown' }}</li>
+                                        {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i data-feather="alert-triangle"></i> No devices found on the network.
+                    </div>
+                {% endif %}
+
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('network_scan') }}" class="btn btn-primary">
+                        <i data-feather="refresh-cw"></i> Rescan Network
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

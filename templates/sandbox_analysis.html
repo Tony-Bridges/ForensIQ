@@ -1,0 +1,362 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="box"></i> Sandbox Analysis</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="analysis_type" class="form-label">Analysis Type</label>
+                        <select class="form-select" id="analysis_type" name="analysis_type" required>
+                            <option value="">Select analysis type...</option>
+                            <option value="file_execution">File Execution Analysis</option>
+                            <option value="behavior_analysis">Behavior Analysis</option>
+                        </select>
+                    </div>
+                    
+                    <div id="file-config" class="mb-3" style="display: none;">
+                        <label for="file" class="form-label">Upload File</label>
+                        <input type="file" class="form-control" id="file" name="file">
+                        
+                        <label for="environment" class="form-label mt-2">Sandbox Environment</label>
+                        <select class="form-select" id="environment" name="environment">
+                            <option value="docker">Docker Container</option>
+                            <option value="virtualbox">VirtualBox VM</option>
+                            <option value="vmware">VMware VM</option>
+                            <option value="qemu">QEMU VM</option>
+                        </select>
+                        
+                        <label for="os" class="form-label mt-2">Operating System</label>
+                        <select class="form-select" id="os" name="os">
+                            <option value="windows_10">Windows 10</option>
+                            <option value="windows_11">Windows 11</option>
+                            <option value="ubuntu_20">Ubuntu 20.04</option>
+                            <option value="macos_12">macOS 12</option>
+                        </select>
+                        
+                        <label for="execution_time" class="form-label mt-2">Execution Time (seconds)</label>
+                        <input type="number" class="form-control" id="execution_time" name="execution_time" value="300" min="60" max="1800">
+                        
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="network_isolation" name="network_isolation" checked>
+                            <label class="form-check-label" for="network_isolation">Network Isolation</label>
+                        </div>
+                    </div>
+                    
+                    <div id="behavior-config" class="mb-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <small><i data-feather="info"></i> Behavior analysis will be performed on simulated execution data for demonstration purposes.</small>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="play"></i> Execute Analysis
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="activity"></i> Sandbox Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+            </div>
+            <div class="card-body">
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ results.error }}
+                </div>
+                {% else %}
+                
+                {% if analysis_type == 'file_execution' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Execution Summary</h6>
+                        {% if results.file_info %}
+                        <p><strong>File Type:</strong> {{ results.file_info.file_type }}</p>
+                        <p><strong>File Size:</strong> {{ results.file_info.file_size }} bytes</p>
+                        <p><strong>SHA-256:</strong> <code class="small">{{ results.file_info.sha256_hash[:32] }}...</code></p>
+                        {% endif %}
+                        {% if results.execution_summary %}
+                        <p><strong>Execution Status:</strong> 
+                            <span class="badge bg-{{ 'success' if results.execution_summary.execution_status == 'completed' else 'warning' }}">
+                                {{ results.execution_summary.execution_status.title() }}
+                            </span>
+                        </p>
+                        <p><strong>Execution Time:</strong> {{ results.execution_summary.execution_time }}s</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Threat Assessment</h6>
+                        {% if results.threat_assessment %}
+                        <p><strong>Threat Level:</strong> 
+                            <span class="badge bg-{{ 'danger' if results.threat_assessment.threat_level == 'critical' else ('warning' if results.threat_assessment.threat_level == 'high' else 'info') }}">
+                                {{ results.threat_assessment.threat_level.title() }}
+                            </span>
+                        </p>
+                        <p><strong>Threat Score:</strong> {{ results.threat_assessment.threat_score }}/100</p>
+                        <p><strong>Malware Family:</strong> {{ results.threat_assessment.malware_family }}</p>
+                        <p><strong>Confidence:</strong> {{ (results.threat_assessment.confidence * 100)|round(1) }}%</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.behavioral_analysis %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Process Activities</h6>
+                        {% if results.behavioral_analysis.process_activities %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Process</th>
+                                        <th>PID</th>
+                                        <th>Command Line</th>
+                                        <th>Memory</th>
+                                        <th>CPU %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for process in results.behavioral_analysis.process_activities %}
+                                    <tr>
+                                        <td>{{ process.process_name }}</td>
+                                        <td>{{ process.pid }}</td>
+                                        <td class="small font-monospace">{{ process.command_line[:50] }}{% if process.command_line|length > 50 %}...{% endif %}</td>
+                                        <td>{{ process.memory_usage }}</td>
+                                        <td>{{ process.cpu_usage }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.network_activity %}
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Network Activity</h6>
+                        {% if results.network_activity.dns_queries %}
+                        <p><strong>DNS Queries:</strong> {{ results.network_activity.dns_queries|length }}</p>
+                        {% for query in results.network_activity.dns_queries[:3] %}
+                        <div class="small">{{ query.query }} → {{ query.response }}</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>HTTP Requests</h6>
+                        {% if results.network_activity.http_requests %}
+                        {% for request in results.network_activity.http_requests[:3] %}
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <div class="small font-monospace">{{ request.method }} {{ request.url[:50] }}{% if request.url|length > 50 %}...{% endif %}</div>
+                                <div class="small">Response: {{ request.response_code }} ({{ request.response_size }} bytes)</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.filesystem_changes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>File System Changes</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6 class="small">Files Created</h6>
+                                {% if results.filesystem_changes.files_created %}
+                                {% for file in results.filesystem_changes.files_created[:5] %}
+                                <div class="small font-monospace">{{ file.path }}</div>
+                                {% endfor %}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="small">Files Modified</h6>
+                                {% if results.filesystem_changes.files_modified %}
+                                {% for file in results.filesystem_changes.files_modified[:5] %}
+                                <div class="small font-monospace">{{ file.path }}</div>
+                                {% endfor %}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="small">Files Deleted</h6>
+                                {% if results.filesystem_changes.files_deleted %}
+                                {% for file in results.filesystem_changes.files_deleted[:5] %}
+                                <div class="small font-monospace">{{ file.path }}</div>
+                                {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.api_calls %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>API Calls</h6>
+                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead class="sticky-top bg-dark text-light">
+                                    <tr>
+                                        <th>Function</th>
+                                        <th>Parameters</th>
+                                        <th>Return</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for call_type, calls in results.api_calls.items() %}
+                                    {% for call in calls[:5] %}
+                                    <tr>
+                                        <td class="small">{{ call.function }}</td>
+                                        <td class="small">{{ call.parameters.keys()|list|join(', ') }}</td>
+                                        <td class="small">{{ call.return_value }}</td>
+                                        <td class="small">{{ call.timestamp[-8:] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.screenshots %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Screenshots</h6>
+                        <div class="row">
+                            {% for screenshot in results.screenshots %}
+                            <div class="col-md-4">
+                                <div class="card mb-2">
+                                    <div class="card-body p-2 text-center">
+                                        <i data-feather="image" style="width: 48px; height: 48px;" class="text-muted"></i>
+                                        <div class="small">{{ screenshot.description }}</div>
+                                        <div class="small text-muted">{{ screenshot.timestamp[-8:] }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.indicators_of_compromise %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Indicators of Compromise</h6>
+                        {% for ioc in results.indicators_of_compromise %}
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <strong>{{ ioc.type.replace('_', ' ').title() }}:</strong> 
+                                <code class="small">{{ ioc.value }}</code><br>
+                                <div class="small">Source: {{ ioc.source }} | Confidence: {{ ioc.confidence.title() }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'behavior_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Behavior Summary</h6>
+                        <p><strong>Behavioral Score:</strong> {{ results.behavioral_score }}/100</p>
+                        <p><strong>Suspicious Activities:</strong> {{ results.suspicious_activities|length }}</p>
+                        <p><strong>Malware Indicators:</strong> {{ results.malware_indicators|length }}</p>
+                        <p><strong>Evasion Techniques:</strong> {{ results.evasion_techniques|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Threat Categories</h6>
+                        <p><strong>Persistence Mechanisms:</strong> {{ results.persistence_mechanisms|length }}</p>
+                        <p><strong>Data Exfiltration:</strong> {{ results.data_exfiltration|length }}</p>
+                        <p><strong>Privilege Escalation:</strong> {{ results.privilege_escalation|length }}</p>
+                        <p><strong>Anti-Analysis:</strong> {{ results.anti_analysis_techniques|length }}</p>
+                    </div>
+                </div>
+                
+                {% if results.malware_indicators %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Malware Indicators</h6>
+                        {% for indicator in results.malware_indicators %}
+                        <div class="alert alert-warning">
+                            <strong>{{ indicator.type.replace('_', ' ').title() }}</strong><br>
+                            {{ indicator.description }}<br>
+                            <div class="small">Confidence: {{ indicator.confidence }}% | Severity: {{ indicator.severity.title() }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if results.evasion_techniques %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Evasion Techniques</h6>
+                        {% for technique in results.evasion_techniques %}
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <strong>{{ technique.replace('_', ' ').title() }}</strong>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="box" class="text-muted" style="width: 64px; height: 64px;"></i>
+                <p class="text-muted mt-3">Upload a file or select behavior analysis to begin sandbox investigation.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const analysisType = this.value;
+    const fileConfig = document.getElementById('file-config');
+    const behaviorConfig = document.getElementById('behavior-config');
+    
+    // Hide all config sections
+    fileConfig.style.display = 'none';
+    behaviorConfig.style.display = 'none';
+    
+    // Show relevant config section
+    if (analysisType === 'file_execution') {
+        fileConfig.style.display = 'block';
+    } else if (analysisType === 'behavior_analysis') {
+        behaviorConfig.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+Develop a comprehensive and advanced computer forensic investigation tool capable of in-depth analysis of a wide range of digital devices and operating systems. This tool should be designed to meet the specific needs of law enforcement and digital forensic professionals, enabling them to effectively investigate cyber incidents related to both mobile devices and computers. The tool must be robust, reliable, and secure, ensuring the integrity of evidence and adhering to forensic best practices.
+
+**Key Features:**
+
+*   **Device Support:**  Comprehensive support for a broad spectrum of devices, including:
+    *   iOS devices (iPhones, iPads)
+    *   Android devices (various manufacturers, including Huawei)
+    *   Huawei Mobile devices (with a focus on their specific OS)
+    *   Microsoft Windows computers
+    *   Unix/Linux platforms (various distributions)
+    *   MacOS computers
+
+*   **Data Acquisition:**
+    *   Logical and physical acquisition methods for mobile devices and computers.
+    *   Secure and forensically sound imaging processes.
+    *   Support for various connection types (USB, network, etc.).
+    *   Acquisition of volatile data (RAM).
+    *   Ability to acquire data from encrypted devices (with proper authorization).
+
+*   **Data Analysis:**
+    *   File system analysis: Examination of file metadata, deleted files, and file fragments.
+    *   Registry analysis (Windows): In-depth analysis of the Windows Registry.
+    *   Timeline analysis: Reconstruction of events based on timestamps.
+    *   Network forensics: Analysis of network traffic, logs, and connections.
+    *   Malware analysis: Detection and analysis of malicious software.
+    *   Application analysis: Examination of application data and settings.
+    *   Mobile device forensics: Extraction and analysis of call logs, SMS messages, contacts, location data, and app data.
+    *   Media analysis: Examination of images, videos, and audio files.
+    *   Data carving: Recovery of deleted files and data fragments.
+    *   Keyword search: Searching for specific keywords across acquired data.
+    *   Hashing: Generating hashes (MD5, SHA-256) for file verification.
+    *   Reporting: Generation of comprehensive forensic reports.
+
+*   **Advanced Features:**
+    *   Automated analysis: Automating repetitive tasks to improve efficiency.
+    *   Data visualization: Visual representation of data to aid in analysis.
+    *   Link analysis: Identifying relationships between different pieces of evidence.
+    *   Anti-forensics detection: Identifying techniques used to hide or destroy evidence.
+    *   Encrypted container analysis:  Ability to analyze data within encrypted containers (with proper authorization).
+    *   Cross-platform analysis: Ability to analyze data from different operating systems on a single platform.
+
+*   **Security and Integrity:**
+    *   Secure data storage:  Protecting acquired data from unauthorized access.
+    *   Write-blocking:  Preventing any changes to the original evidence.
+    *   Chain of custody:  Maintaining a clear and auditable chain of custody for all evidence.
+    *   User authentication and authorization:  Restricting access to the tool based on user roles.
+
+*   **User Interface:**
+    *   Intuitive and user-friendly interface.
+    *   Customizable dashboards and workflows.
+    *   Clear and concise presentation of information.
+
+*   **Reporting:**
+    *   Comprehensive and customizable reporting features.
+    *   Ability to export reports in various formats (PDF, HTML, etc.).
+    *   Automated report generation.
+
+**Technical Requirements:**
+
+*   **Performance:**  Optimize for speed and efficiency.
+*   **Scalability:**  Design for large datasets and complex investigations.
+*   **Stability:**  Ensure reliable operation and prevent crashes.
+*   **Security:**  Prioritize security at all levels.
+*   **Cross-platform compatibility:**  Support for Windows, macOS, and Linux (for the forensic workstation).
+*   **API:**  Well-documented API for integration with other tools.
+
+**Development Process:**
+
+*   Agile development methodology.
+*   Thorough testing (unit tests, integration tests, user acceptance testing).
+*   Detailed documentation (API documentation, user manuals, technical documentation).
+*   Version control (Git).
+*   Code reviews.
+*   Automated testing frameworks.
+*   Security audits and penetration testing.
+
+**Deliverables:**
+
+*   Fully functional forensic investigation tool.
+*   Complete source code (if open-source).
+*   Comprehensive documentation.
+*   Training materials.
+
+**Emphasis on:**
+
+*   Forensic soundness: Adherence to forensic best practices.
+*   Accuracy:  Ensuring the accuracy of data acquisition and analysis.
+*   Usability:  Intuitive and user-friendly interface.
+*   Performance:  Fast and efficient operation.
+*   Security:  Protecting evidence and the tool itself.
+
+This detailed prompt should provide a solid foundation for developing a powerful and versatile computer forensic investigation tool. Remember to adapt it to the specific requirements of the agency and prioritize forensic integrity and security throughout the development process.

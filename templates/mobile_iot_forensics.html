@@ -1,0 +1,372 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="smartphone"></i> Mobile & IoT Forensics</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="analysis_type" class="form-label">Analysis Type</label>
+                        <select class="form-select" id="analysis_type" name="analysis_type" required>
+                            <option value="">Select analysis type...</option>
+                            <option value="mobile_acquisition">Mobile Device Acquisition</option>
+                            <option value="iot_analysis">IoT Device Analysis</option>
+                            <option value="vehicle_telematics">Vehicle Telematics</option>
+                            <option value="social_media">Social Media Extraction</option>
+                        </select>
+                    </div>
+                    
+                    <div id="mobile-config" class="mb-3" style="display: none;">
+                        <label for="device_type" class="form-label">Device Type</label>
+                        <input type="text" class="form-control" id="device_type" name="device_type" placeholder="smartphone">
+                        
+                        <label for="device_os" class="form-label mt-2">Operating System</label>
+                        <select class="form-select" id="device_os" name="device_os">
+                            <option value="ios">iOS</option>
+                            <option value="android">Android</option>
+                            <option value="huawei">HarmonyOS (Huawei)</option>
+                        </select>
+                        
+                        <label for="device_model" class="form-label mt-2">Device Model</label>
+                        <input type="text" class="form-control" id="device_model" name="device_model" placeholder="iPhone 14, Galaxy S23, etc.">
+                        
+                        <label for="acquisition_type" class="form-label mt-2">Acquisition Type</label>
+                        <select class="form-select" id="acquisition_type" name="acquisition_type">
+                            <option value="logical">Logical Acquisition</option>
+                            <option value="physical">Physical Acquisition</option>
+                            <option value="filesystem">File System Acquisition</option>
+                        </select>
+                    </div>
+                    
+                    <div id="iot-config" class="mb-3" style="display: none;">
+                        <label for="iot_device_type" class="form-label">IoT Device Type</label>
+                        <select class="form-select" id="iot_device_type" name="iot_device_type">
+                            <option value="smart_home">Smart Home Device</option>
+                            <option value="wearables">Wearable Device</option>
+                            <option value="vehicle">Vehicle System</option>
+                            <option value="industrial">Industrial/SCADA</option>
+                        </select>
+                        
+                        <label for="manufacturer" class="form-label mt-2">Manufacturer</label>
+                        <input type="text" class="form-control" id="manufacturer" name="manufacturer" placeholder="Amazon, Google, Samsung, etc.">
+                        
+                        <label for="model" class="form-label mt-2">Model</label>
+                        <input type="text" class="form-control" id="model" name="model" placeholder="Echo Dot, Nest Hub, etc.">
+                        
+                        <label class="form-label mt-2">Data Sources</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="logs" id="logs_iot" name="data_sources" checked>
+                            <label class="form-check-label" for="logs_iot">Device Logs</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="firmware" id="firmware" name="data_sources" checked>
+                            <label class="form-check-label" for="firmware">Firmware Analysis</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="network_traffic" id="network_traffic" name="data_sources">
+                            <label class="form-check-label" for="network_traffic">Network Traffic</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="sensor_data" id="sensor_data" name="data_sources">
+                            <label class="form-check-label" for="sensor_data">Sensor Data</label>
+                        </div>
+                    </div>
+                    
+                    <div id="vehicle-config" class="mb-3" style="display: none;">
+                        <label for="vehicle_make" class="form-label">Vehicle Make</label>
+                        <input type="text" class="form-control" id="vehicle_make" name="vehicle_make" placeholder="Toyota, Ford, Tesla, etc.">
+                        
+                        <label for="vehicle_model" class="form-label mt-2">Vehicle Model</label>
+                        <input type="text" class="form-control" id="vehicle_model" name="vehicle_model" placeholder="Camry, F-150, Model 3, etc.">
+                        
+                        <label for="vehicle_year" class="form-label mt-2">Year</label>
+                        <input type="number" class="form-control" id="vehicle_year" name="vehicle_year" placeholder="2024" min="2000" max="2025">
+                        
+                        <label class="form-label mt-2">Data Types</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="gps" id="gps" name="data_types" checked>
+                            <label class="form-check-label" for="gps">GPS History</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="call_logs" id="call_logs" name="data_types" checked>
+                            <label class="form-check-label" for="call_logs">Call Logs</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="voice_commands" id="voice_commands" name="data_types">
+                            <label class="form-check-label" for="voice_commands">Voice Commands</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="driver_behavior" id="driver_behavior" name="data_types">
+                            <label class="form-check-label" for="driver_behavior">Driver Behavior</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="diagnostic_data" id="diagnostic_data" name="data_types">
+                            <label class="form-check-label" for="diagnostic_data">Diagnostic Data</label>
+                        </div>
+                    </div>
+                    
+                    <div id="social-config" class="mb-3" style="display: none;">
+                        <label class="form-label">Social Media Platforms</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="whatsapp" id="whatsapp" name="platforms" checked>
+                            <label class="form-check-label" for="whatsapp">WhatsApp</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="telegram" id="telegram" name="platforms" checked>
+                            <label class="form-check-label" for="telegram">Telegram</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="signal" id="signal" name="platforms">
+                            <label class="form-check-label" for="signal">Signal</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="facebook" id="facebook" name="platforms">
+                            <label class="form-check-label" for="facebook">Facebook</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="instagram" id="instagram" name="platforms">
+                            <label class="form-check-label" for="instagram">Instagram</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="tiktok" id="tiktok" name="platforms">
+                            <label class="form-check-label" for="tiktok">TikTok</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="download"></i> Extract Data
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="smartphone"></i> Analysis Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+            </div>
+            <div class="card-body">
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ results.error }}
+                </div>
+                {% else %}
+                
+                {% if analysis_type == 'mobile_acquisition' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Device Information</h6>
+                        {% if results.device_info %}
+                        <p><strong>Type:</strong> {{ results.device_info.type }}</p>
+                        <p><strong>OS:</strong> {{ results.device_info.os.upper() }}</p>
+                        <p><strong>Model:</strong> {{ results.device_info.model }}</p>
+                        {% endif %}
+                        <p><strong>Acquisition Type:</strong> {{ results.acquisition_type.title() }}</p>
+                        <p><strong>Secure Enclave Bypass:</strong> 
+                            <span class="badge bg-{{ 'success' if results.secure_enclave_bypass else 'secondary' }}">
+                                {{ 'Yes' if results.secure_enclave_bypass else 'No' }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Extracted Data</h6>
+                        {% if results.acquired_data %}
+                        <ul class="list-group">
+                            {% for data_type in results.acquired_data.keys() %}
+                            <li class="list-group-item">
+                                <i data-feather="check-circle" class="text-success"></i> {{ data_type.replace('_', ' ').title() }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.chat_data %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Chat Applications</h6>
+                        <div class="row">
+                            {% for app, data in results.chat_data.items() %}
+                            <div class="col-md-4">
+                                <div class="card mb-2">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title">{{ app.title() }}</h6>
+                                        <p class="card-text small">
+                                            Conversations: {{ data.conversations|length }}<br>
+                                            Media Files: {{ data.media_files|length }}<br>
+                                            Deleted Messages: {{ data.deleted_messages|length }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'iot_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Device Information</h6>
+                        <p><strong>Type:</strong> {{ results.device_type.replace('_', ' ').title() }}</p>
+                        <p><strong>Manufacturer:</strong> {{ results.device_info.get('manufacturer', 'Unknown') }}</p>
+                        <p><strong>Model:</strong> {{ results.device_info.get('model', 'Unknown') }}</p>
+                        {% if results.firmware_analysis %}
+                        <p><strong>Firmware:</strong> {{ results.firmware_analysis.get('version', 'Unknown') }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Security Assessment</h6>
+                        <p><strong>Vulnerabilities:</strong> {{ results.security_vulnerabilities|length }}</p>
+                        <p><strong>Privacy Concerns:</strong> {{ results.privacy_concerns|length }}</p>
+                        {% if results.sensor_data_analysis %}
+                        <p><strong>Sensor Data Points:</strong> {{ results.sensor_data_analysis.keys()|list|length }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if analysis_type == 'vehicle_telematics' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Vehicle Information</h6>
+                        {% if results.vehicle_info %}
+                        <p><strong>Make:</strong> {{ results.vehicle_info.make }}</p>
+                        <p><strong>Model:</strong> {{ results.vehicle_info.model }}</p>
+                        <p><strong>Year:</strong> {{ results.vehicle_info.year }}</p>
+                        {% endif %}
+                        <p><strong>GPS Points:</strong> {{ results.gps_history|length }}</p>
+                        <p><strong>Call Records:</strong> {{ results.call_logs|length }}</p>
+                        <p><strong>Voice Commands:</strong> {{ results.voice_commands|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Driver Behavior</h6>
+                        {% if results.driver_behavior %}
+                        <p><strong>Driving Score:</strong> {{ results.driver_behavior.driving_score }}/100</p>
+                        <p><strong>Aggressive Events:</strong> {{ results.driver_behavior.aggressive_driving_events }}</p>
+                        <p><strong>Speeding Violations:</strong> {{ results.driver_behavior.speeding_violations }}</p>
+                        <p><strong>Total Distance:</strong> {{ results.driver_behavior.total_distance }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.timeline_reconstruction %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Activity Timeline</h6>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Type</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in results.timeline_reconstruction[:10] %}
+                                    <tr>
+                                        <td class="small">{{ event.timestamp }}</td>
+                                        <td><span class="badge bg-primary">{{ event.type }}</span></td>
+                                        <td class="small">
+                                            {% if event.type == 'location' %}
+                                            Lat: {{ event.data.latitude }}, Lng: {{ event.data.longitude }}
+                                            {% elif event.type == 'call' %}
+                                            {{ event.data.phone_number }} ({{ event.data.duration }}s)
+                                            {% elif event.type == 'voice_command' %}
+                                            "{{ event.data.command }}"
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if analysis_type == 'social_media' %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Social Media Analysis</h6>
+                        <p><strong>Platforms Analyzed:</strong> {{ results.platforms_analyzed|join(', ') }}</p>
+                        
+                        <div class="row">
+                            {% for platform in results.platforms_analyzed %}
+                            {% if results.chat_conversations.get(platform) %}
+                            <div class="col-md-4">
+                                <div class="card mb-2">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title">{{ platform.title() }}</h6>
+                                        <p class="card-text small">
+                                            Conversations: {{ results.chat_conversations[platform]|length }}<br>
+                                            Media Files: {{ results.media_files.get(platform, [])|length }}<br>
+                                            Contacts: {{ results.contact_lists.get(platform, [])|length }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="smartphone" class="text-muted" style="width: 64px; height: 64px;"></i>
+                <p class="text-muted mt-3">Select an analysis type to begin mobile and IoT device investigation.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const analysisType = this.value;
+    const mobileConfig = document.getElementById('mobile-config');
+    const iotConfig = document.getElementById('iot-config');
+    const vehicleConfig = document.getElementById('vehicle-config');
+    const socialConfig = document.getElementById('social-config');
+    
+    // Hide all config sections
+    mobileConfig.style.display = 'none';
+    iotConfig.style.display = 'none';
+    vehicleConfig.style.display = 'none';
+    socialConfig.style.display = 'none';
+    
+    // Show relevant config section
+    if (analysisType === 'mobile_acquisition') {
+        mobileConfig.style.display = 'block';
+    } else if (analysisType === 'iot_analysis') {
+        iotConfig.style.display = 'block';
+    } else if (analysisType === 'vehicle_telematics') {
+        vehicleConfig.style.display = 'block';
+    } else if (analysisType === 'social_media') {
+        socialConfig.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

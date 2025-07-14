@@ -1,0 +1,256 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="cloud"></i> Cloud & Container Forensics</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="analysis_type" class="form-label">Analysis Type</label>
+                        <select class="form-select" id="analysis_type" name="analysis_type" required>
+                            <option value="">Select analysis type...</option>
+                            <option value="cloud_acquisition">Cloud Data Acquisition</option>
+                            <option value="container_analysis">Container Analysis</option>
+                            <option value="serverless_trace">Serverless Tracing</option>
+                            <option value="vm_analysis">VM Disk Analysis</option>
+                        </select>
+                    </div>
+                    
+                    <div id="cloud-config" class="mb-3" style="display: none;">
+                        <label for="cloud_provider" class="form-label">Cloud Provider</label>
+                        <select class="form-select" id="cloud_provider" name="cloud_provider">
+                            <option value="aws">Amazon Web Services</option>
+                            <option value="azure">Microsoft Azure</option>
+                            <option value="gcp">Google Cloud Platform</option>
+                            <option value="onedrive">OneDrive</option>
+                            <option value="dropbox">Dropbox</option>
+                        </select>
+                        
+                        <label for="resource_types" class="form-label mt-2">Resource Types</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="logs" id="logs" name="resource_types" checked>
+                            <label class="form-check-label" for="logs">Logs (CloudTrail, Activity Logs)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="storage" id="storage" name="resource_types" checked>
+                            <label class="form-check-label" for="storage">Storage (S3, Blob Storage)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="iam" id="iam" name="resource_types" checked>
+                            <label class="form-check-label" for="iam">IAM (Users, Roles, Policies)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="compute" id="compute" name="resource_types">
+                            <label class="form-check-label" for="compute">Compute (Instances, VMs)</label>
+                        </div>
+                    </div>
+                    
+                    <div id="container-config" class="mb-3" style="display: none;">
+                        <label for="container_runtime" class="form-label">Container Runtime</label>
+                        <select class="form-select" id="container_runtime" name="container_runtime">
+                            <option value="docker">Docker</option>
+                            <option value="kubernetes">Kubernetes</option>
+                            <option value="containerd">containerd</option>
+                        </select>
+                    </div>
+                    
+                    <div id="serverless-config" class="mb-3" style="display: none;">
+                        <label for="function_names" class="form-label">Function Names (comma-separated)</label>
+                        <input type="text" class="form-control" id="function_names" name="function_names" 
+                               placeholder="function1,function2,function3">
+                    </div>
+                    
+                    <div id="vm-config" class="mb-3" style="display: none;">
+                        <label for="vm_format" class="form-label">VM Format</label>
+                        <select class="form-select" id="vm_format" name="vm_format">
+                            <option value="vmware">VMware (VMDK)</option>
+                            <option value="hyper-v">Hyper-V (VHDX)</option>
+                            <option value="virtualbox">VirtualBox (VDI)</option>
+                            <option value="citrix">Citrix XenServer</option>
+                        </select>
+                        
+                        <label for="disk_path" class="form-label mt-2">Disk Path</label>
+                        <input type="text" class="form-control" id="disk_path" name="disk_path" 
+                               placeholder="/path/to/vm/disk.vmdk">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="play"></i> Start Analysis
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="search"></i> Analysis Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+            </div>
+            <div class="card-body">
+                {% if results.error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ results.error }}
+                </div>
+                {% else %}
+                
+                {% if analysis_type == 'cloud_acquisition' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Acquisition Summary</h6>
+                        <p><strong>Provider:</strong> {{ results.provider.upper() }}</p>
+                        <p><strong>Timestamp:</strong> {{ results.timestamp }}</p>
+                        <p><strong>Resources Acquired:</strong> {{ results.resources.keys() | list | length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Resource Types</h6>
+                        <ul class="list-group">
+                            {% for resource_type in results.resources.keys() %}
+                            <li class="list-group-item">
+                                <i data-feather="check-circle" class="text-success"></i> {{ resource_type.replace('_', ' ').title() }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if analysis_type == 'container_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Containers</h6>
+                        {% if results.containers %}
+                        {% for container in results.containers %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ container.name or container.id }}</h6>
+                                <p class="card-text small">
+                                    <strong>Image:</strong> {{ container.image }}<br>
+                                    <strong>Status:</strong> {{ container.status }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">No containers found</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Images & Volumes</h6>
+                        {% if results.images %}
+                        <p><strong>Images:</strong> {{ results.images|length }}</p>
+                        {% endif %}
+                        {% if results.volumes %}
+                        <p><strong>Volumes:</strong> {{ results.volumes|length }}</p>
+                        {% endif %}
+                        {% if results.networks %}
+                        <p><strong>Networks:</strong> {{ results.networks|length }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if analysis_type == 'vm_analysis' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>VM Disk Information</h6>
+                        {% if results.disk_info %}
+                        <p><strong>Format:</strong> {{ results.disk_info.format }}</p>
+                        <p><strong>Size:</strong> {{ results.disk_info.size }}</p>
+                        <p><strong>Checksum:</strong> {{ results.disk_info.checksum }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>File Systems</h6>
+                        {% if results.file_systems %}
+                        {% for fs in results.file_systems %}
+                        <div class="small mb-2">
+                            <strong>{{ fs.type }}:</strong> {{ fs.total_space }} 
+                            ({{ fs.used_space }} used, {{ fs.files_count }} files)
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if results.artifacts %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Forensic Artifacts</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Path</th>
+                                        <th>Size</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for artifact in results.artifacts %}
+                                    <tr>
+                                        <td>{{ artifact.type.replace('_', ' ').title() }}</td>
+                                        <td>{{ artifact.path }}</td>
+                                        <td>{{ artifact.size }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h6>Raw Data</h6>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="cloud" class="text-muted" style="width: 64px; height: 64px;"></i>
+                <p class="text-muted mt-3">Select an analysis type to begin cloud and container forensics investigation.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const analysisType = this.value;
+    const cloudConfig = document.getElementById('cloud-config');
+    const containerConfig = document.getElementById('container-config');
+    const serverlessConfig = document.getElementById('serverless-config');
+    const vmConfig = document.getElementById('vm-config');
+    
+    // Hide all config sections
+    cloudConfig.style.display = 'none';
+    containerConfig.style.display = 'none';
+    serverlessConfig.style.display = 'none';
+    vmConfig.style.display = 'none';
+    
+    // Show relevant config section
+    if (analysisType === 'cloud_acquisition') {
+        cloudConfig.style.display = 'block';
+    } else if (analysisType === 'container_analysis') {
+        containerConfig.style.display = 'block';
+    } else if (analysisType === 'serverless_trace') {
+        cloudConfig.style.display = 'block';
+        serverlessConfig.style.display = 'block';
+    } else if (analysisType === 'vm_analysis') {
+        vmConfig.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}
