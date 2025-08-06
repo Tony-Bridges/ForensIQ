@@ -10,12 +10,18 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import logging
 import os
-import hashlib
 import math
-import numpy as np
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import StandardScaler
-import pandas as pd
+
+# Try to import ML libraries, fallback to basic analysis if not available
+try:
+    import numpy as np
+    from sklearn.ensemble import IsolationForest
+    from sklearn.preprocessing import StandardScaler
+    import pandas as pd
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    logging.warning("Machine learning libraries not available. Using basic analysis methods.")
 
 class AIIntelligence:
     def __init__(self):
@@ -32,7 +38,7 @@ class AIIntelligence:
 
     def detect_anomalies(self, data_stream):
         """
-        Detect anomalies in data using machine learning.
+        Detect anomalies in data using machine learning or heuristic analysis.
 
         Args:
             data_stream: Data to analyze for anomalies (list of samples or file paths)
@@ -41,95 +47,11 @@ class AIIntelligence:
             dict: Anomaly detection results
         """
         try:
-            anomalies = []
-            confidence_scores = []
-
-            # Process different types of data
-            if isinstance(data_stream, str):
-                # Single file analysis
-                data_stream = [data_stream]
-
-            features_list = []
-            file_info = []
-
-            for item in data_stream:
-                if isinstance(item, str) and os.path.exists(item):
-                    # File-based analysis
-                    features = self._extract_file_features(item)
-                    if features:
-                        features_list.append(features)
-                        file_info.append({'path': item, 'type': 'file'})
-
-                elif isinstance(item, dict):
-                    # Process structured data
-                    features = self._extract_dict_features(item)
-                    if features:
-                        features_list.append(features)
-                        file_info.append({'data': item, 'type': 'dict'})
-
-            if not features_list:
-                return {
-                    'anomalies_detected': 0,
-                    'error': 'No valid data to analyze',
-                    'analysis_timestamp': datetime.utcnow().isoformat()
-                }
-
-            # Convert to numpy array
-            X = np.array(features_list)
-
-            # Normalize features
-            scaler = StandardScaler()
-            X_scaled = scaler.fit_transform(X)
-
-            # Apply Isolation Forest for anomaly detection
-            isolation_forest = IsolationForest(contamination=0.1, random_state=42)
-            anomaly_labels = isolation_forest.fit_predict(X_scaled)
-            anomaly_scores = isolation_forest.score_samples(X_scaled)
-
-            # Process results
-            anomaly_types = []
-            detected_anomalies = []
-
-            for i, (label, score) in enumerate(zip(anomaly_labels, anomaly_scores)):
-                if label == -1:  # Anomaly detected
-                    confidence = abs(score)
-                    confidence_scores.append(confidence)
-
-                    # Determine anomaly type based on features
-                    feature_vector = features_list[i]
-                    anomaly_type = self._classify_anomaly_type(feature_vector)
-                    anomaly_types.append(anomaly_type)
-
-                    detected_anomalies.append({
-                        'index': i,
-                        'confidence': confidence,
-                        'type': anomaly_type,
-                        'source': file_info[i],
-                        'feature_vector': feature_vector
-                    })
-
-            # Calculate risk level
-            if not confidence_scores:
-                risk_level = 'low'
+            if ML_AVAILABLE:
+                return self._ml_anomaly_detection(data_stream)
             else:
-                avg_confidence = np.mean(confidence_scores)
-                if avg_confidence > 0.8:
-                    risk_level = 'high'
-                elif avg_confidence > 0.6:
-                    risk_level = 'medium'
-                else:
-                    risk_level = 'low'
-
-            return {
-                'anomalies_detected': len(detected_anomalies),
-                'confidence_scores': confidence_scores,
-                'anomaly_types': anomaly_types,
-                'risk_level': risk_level,
-                'detailed_anomalies': detected_anomalies,
-                'total_samples': len(features_list),
-                'analysis_timestamp': datetime.utcnow().isoformat()
-            }
-
+                return self._heuristic_anomaly_detection(data_stream)
+                
         except Exception as e:
             logging.error(f"Anomaly detection failed: {str(e)}")
             return {
@@ -137,6 +59,173 @@ class AIIntelligence:
                 'anomalies_detected': 0,
                 'analysis_timestamp': datetime.utcnow().isoformat()
             }
+
+    def _ml_anomaly_detection(self, data_stream):
+        """Machine learning based anomaly detection."""
+        anomalies = []
+        confidence_scores = []
+
+        # Process different types of data
+        if isinstance(data_stream, str):
+            data_stream = [data_stream]
+
+        features_list = []
+        file_info = []
+
+        for item in data_stream:
+            if isinstance(item, str) and os.path.exists(item):
+                features = self._extract_file_features(item)
+                if features:
+                    features_list.append(features)
+                    file_info.append({'path': item, 'type': 'file'})
+            elif isinstance(item, dict):
+                features = self._extract_dict_features(item)
+                if features:
+                    features_list.append(features)
+                    file_info.append({'data': item, 'type': 'dict'})
+
+        if not features_list:
+            return {
+                'anomalies_detected': 0,
+                'error': 'No valid data to analyze',
+                'analysis_timestamp': datetime.utcnow().isoformat()
+            }
+
+        X = np.array(features_list)
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+
+        isolation_forest = IsolationForest(contamination=0.1, random_state=42)
+        anomaly_labels = isolation_forest.fit_predict(X_scaled)
+        anomaly_scores = isolation_forest.score_samples(X_scaled)
+
+        anomaly_types = []
+        detected_anomalies = []
+
+        for i, (label, score) in enumerate(zip(anomaly_labels, anomaly_scores)):
+            if label == -1:
+                confidence = abs(score)
+                confidence_scores.append(confidence)
+                feature_vector = features_list[i]
+                anomaly_type = self._classify_anomaly_type(feature_vector)
+                anomaly_types.append(anomaly_type)
+
+                detected_anomalies.append({
+                    'index': i,
+                    'confidence': confidence,
+                    'type': anomaly_type,
+                    'source': file_info[i],
+                    'feature_vector': feature_vector
+                })
+
+        if not confidence_scores:
+            risk_level = 'low'
+        else:
+            avg_confidence = np.mean(confidence_scores)
+            if avg_confidence > 0.8:
+                risk_level = 'high'
+            elif avg_confidence > 0.6:
+                risk_level = 'medium'
+            else:
+                risk_level = 'low'
+
+        return {
+            'anomalies_detected': len(detected_anomalies),
+            'confidence_scores': confidence_scores,
+            'anomaly_types': anomaly_types,
+            'risk_level': risk_level,
+            'detailed_anomalies': detected_anomalies,
+            'total_samples': len(features_list),
+            'analysis_timestamp': datetime.utcnow().isoformat()
+        }
+
+    def _heuristic_anomaly_detection(self, data_stream):
+        """Heuristic-based anomaly detection when ML libraries are unavailable."""
+        if isinstance(data_stream, str):
+            data_stream = [data_stream]
+
+        detected_anomalies = []
+        anomaly_types = []
+        
+        for i, item in enumerate(data_stream):
+            if isinstance(item, str) and os.path.exists(item):
+                anomalies = self._analyze_file_heuristics(item)
+                if anomalies:
+                    for anomaly in anomalies:
+                        detected_anomalies.append({
+                            'index': i,
+                            'confidence': anomaly['confidence'],
+                            'type': anomaly['type'],
+                            'source': {'path': item, 'type': 'file'},
+                            'description': anomaly['description']
+                        })
+                        anomaly_types.append(anomaly['type'])
+
+        # Calculate risk level based on anomaly types
+        high_risk_types = ['suspicious_entropy', 'large_file_size', 'suspicious_extension']
+        risk_level = 'low'
+        if any(atype in high_risk_types for atype in anomaly_types):
+            risk_level = 'high' if len([t for t in anomaly_types if t in high_risk_types]) > 2 else 'medium'
+
+        return {
+            'anomalies_detected': len(detected_anomalies),
+            'confidence_scores': [a['confidence'] for a in detected_anomalies],
+            'anomaly_types': anomaly_types,
+            'risk_level': risk_level,
+            'detailed_anomalies': detected_anomalies,
+            'total_samples': len(data_stream),
+            'analysis_timestamp': datetime.utcnow().isoformat(),
+            'method': 'heuristic'
+        }
+
+    def _analyze_file_heuristics(self, file_path):
+        """Analyze file using heuristic methods."""
+        anomalies = []
+        try:
+            file_size = os.path.getsize(file_path)
+            file_ext = os.path.splitext(file_path)[1].lower()
+            
+            # Large file anomaly
+            if file_size > 100 * 1024 * 1024:  # 100MB
+                anomalies.append({
+                    'type': 'large_file_size',
+                    'confidence': 0.7,
+                    'description': f'Unusually large file: {file_size / (1024*1024):.1f}MB'
+                })
+            
+            # Suspicious extensions
+            suspicious_exts = ['.exe', '.scr', '.bat', '.cmd', '.pif', '.com']
+            if file_ext in suspicious_exts:
+                anomalies.append({
+                    'type': 'suspicious_extension',
+                    'confidence': 0.8,
+                    'description': f'Potentially dangerous file extension: {file_ext}'
+                })
+            
+            # High entropy check (simplified)
+            with open(file_path, 'rb') as f:
+                sample = f.read(8192)  # Read first 8KB
+                if sample:
+                    entropy = self._calculate_entropy(sample)
+                    if entropy > 7.5:  # High entropy threshold
+                        anomalies.append({
+                            'type': 'suspicious_entropy',
+                            'confidence': 0.75,
+                            'description': f'High entropy detected: {entropy:.2f}'
+                        })
+            
+            # Check for hidden attributes (Unix-like systems)
+            if os.path.basename(file_path).startswith('.') and len(os.path.basename(file_path)) > 1:
+                anomalies.append({
+                    'type': 'hidden_file',
+                    'confidence': 0.5,
+                    'description': 'Hidden file detected'
+                })
+                
+        except Exception as e:
+            logging.error(f"Heuristic analysis failed for {file_path}: {str(e)}")
+            
+        return anomalies
 
     def _extract_file_features(self, file_path):
         """Extract features from a file for anomaly detection."""
