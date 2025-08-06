@@ -1,14 +1,15 @@
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 
 class Base(DeclarativeBase):
     pass
 
 # This will be initialized from app.py
 db = SQLAlchemy(model_class=Base)
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
-import secrets
 
 class Investigation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -86,14 +87,15 @@ class AuditLog(db.Model):
     @classmethod
     def create_log(cls, action, resource_type=None, resource_id=None, details=None, user_id=None, ip_address=None, user_agent=None):
         """Create audit log entry."""
+        from flask import session, request
         log = cls(
-            user_id=user_id,
+            user_id=user_id or session.get('user_id'),
             action=action,
             resource_type=resource_type,
             resource_id=resource_id,
             details=details,
-            ip_address=ip_address,
-            user_agent=user_agent
+            ip_address=ip_address or (request.remote_addr if request else None),
+            user_agent=user_agent or (request.headers.get('User-Agent', '') if request else None)
         )
         db.session.add(log)
         db.session.commit()
@@ -116,7 +118,6 @@ class Evidence(db.Model):
     device_acquisition = db.relationship('DeviceAcquisitionRecord', backref='evidence', uselist=False)
     annotations = db.relationship('EvidenceAnnotation', backref='evidence', lazy=True)
 
-
 class EvidenceAnnotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     evidence_id = db.Column(db.Integer, db.ForeignKey('evidence.id'), nullable=False)
@@ -125,7 +126,6 @@ class EvidenceAnnotation(db.Model):
     annotation_type = db.Column(db.String(50), default='comment')  # comment, tag, highlight
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
 
 class ChainOfCustody(db.Model):
     id = db.Column(db.Integer, primary_key=True)

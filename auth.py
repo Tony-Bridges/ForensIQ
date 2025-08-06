@@ -1,10 +1,10 @@
+
 import functools
 import hashlib
 import secrets
 from datetime import datetime, timedelta
 from flask import session, request, redirect, url_for, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Investigation, InvestigationUser, InvestigationComment, AuditLog
 import pyotp
 import qrcode
 import io
@@ -37,6 +37,8 @@ class AuthManager:
     @staticmethod
     def create_user(username, email, password, role='viewer'):
         """Create a new user account."""
+        from models import User, AuditLog, db
+        
         if User.query.filter_by(username=username).first():
             return False, "Username already exists"
         if User.query.filter_by(email=email).first():
@@ -60,6 +62,8 @@ class AuthManager:
     @staticmethod
     def authenticate_user(username, password, mfa_token=None):
         """Authenticate user with username/password and optional MFA."""
+        from models import User, AuditLog, db
+        
         user = User.query.filter_by(username=username).first()
 
         if not user or not user.is_active:
@@ -98,6 +102,8 @@ class AuthManager:
     @staticmethod
     def setup_mfa(user):
         """Set up MFA for a user."""
+        from models import db
+        
         secret = pyotp.random_base32()
         user.mfa_secret = secret
 
@@ -127,6 +133,8 @@ class AuthManager:
     @staticmethod
     def verify_mfa_token(user, token):
         """Verify MFA token."""
+        from models import db
+        
         if not user.mfa_secret:
             return False
 
@@ -167,6 +175,7 @@ def require_permission(permission):
                 flash('Please log in to access this page.', 'error')
                 return redirect(url_for('login'))
 
+            from models import User
             user = User.query.get(session['user_id'])
             if not user or permission not in Role.get_permissions(user.role):
                 flash('Access denied. Insufficient permissions.', 'error')
@@ -182,6 +191,7 @@ def require_role(required_role):
         @wraps(f)
         @require_auth
         def decorated_function(*args, **kwargs):
+            from models import User
             user = User.query.get(session['user_id'])
             if not user or user.role != required_role:
                 flash('Access denied. Insufficient role.', 'error')
@@ -192,6 +202,8 @@ def require_role(required_role):
 
 def create_admin_user():
     """Create default admin user if none exists."""
+    from models import User, db
+    
     admin = User.query.filter_by(role='admin').first()
     if not admin:
         admin_user = User(
@@ -203,16 +215,3 @@ def create_admin_user():
         db.session.add(admin_user)
         db.session.commit()
         print("Default admin user created: admin/admin123")
-
-# Extend AuditLog with static method
-AuditLog.create_log = staticmethod(lambda action, resource_type=None, resource_id=None, details=None: 
-    db.session.add(AuditLog(
-        user_id=session.get('user_id'),
-        action=action,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        details=details,
-        ip_address=request.remote_addr,
-        user_agent=request.headers.get('User-Agent', '')
-    )) or db.session.commit()
-)
