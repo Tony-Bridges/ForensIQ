@@ -27,7 +27,13 @@ def add_security_headers(response):
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+# Database configuration with fallback
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    # Fallback to SQLite for development
+    database_url = "sqlite:///instance/forensics.db"
+    
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
@@ -76,6 +82,9 @@ from models import Evidence, ChainOfCustody, DeviceAcquisitionRecord, Analysis
 # Initialize the database tables and create admin user
 with app.app_context():
     try:
+        # Ensure instance directory exists
+        os.makedirs('instance', exist_ok=True)
+        
         db.create_all()
 
         # Create default admin user if none exists
@@ -93,8 +102,10 @@ with app.app_context():
             print("✅ Default admin user created: admin/admin123")
 
         print("✅ Database initialized successfully")
+        print(f"📊 Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
     except Exception as e:
         print(f"❌ Database initialization error: {str(e)}")
+        logging.error(f"Database error: {str(e)}")
         # Try to fix common issues
         try:
             # Drop and recreate tables if there are schema issues
@@ -103,6 +114,7 @@ with app.app_context():
             print("✅ Database schema rebuilt")
         except Exception as e2:
             print(f"❌ Failed to rebuild database: {str(e2)}")
+            logging.error(f"Database rebuild error: {str(e2)}")
 
 # Initialize forensics handlers
 device_handler = DeviceAcquisition()
