@@ -78,11 +78,19 @@ from search_regex import SearchRegex
 # Import models after db initialization
 from models import User, Investigation, InvestigationUser, InvestigationComment, AuditLog, Evidence, ChainOfCustody, DeviceAcquisitionRecord, Analysis
 
-# Initialize the database tables and create admin user
-with app.app_context():
+def initialize_database():
+    """Initialize the database tables and create admin user."""
     try:
-        # Ensure instance directory exists
+        # Ensure instance directory exists with proper permissions
         os.makedirs('instance', exist_ok=True)
+        os.chmod('instance', 0o755)
+        
+        # Check if database file exists and create if needed
+        db_path = 'instance/forensics.db'
+        if not os.path.exists(db_path):
+            # Create empty database file with proper permissions
+            open(db_path, 'a').close()
+            os.chmod(db_path, 0o644)
         
         db.create_all()
 
@@ -102,6 +110,7 @@ with app.app_context():
 
         print("✅ Database initialized successfully")
         print(f"📊 Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
+        return True
     except Exception as e:
         print(f"❌ Database initialization error: {str(e)}")
         logging.error(f"Database error: {str(e)}")
@@ -111,9 +120,11 @@ with app.app_context():
             db.drop_all()
             db.create_all()
             print("✅ Database schema rebuilt")
+            return True
         except Exception as e2:
             print(f"❌ Failed to rebuild database: {str(e2)}")
             logging.error(f"Database rebuild error: {str(e2)}")
+            return False
 
 # Initialize forensics handlers
 device_handler = DeviceAcquisition()
@@ -1296,6 +1307,9 @@ def internal_error(error):
     db.session.rollback()
     return render_template("500.html"), 500
 
-# Initialize database
-with app.app_context():
-    db.create_all()
+if __name__ == "__main__":
+    # Initialize database when running directly
+    with app.app_context():
+        initialize_database()
+    
+    app.run(host="0.0.0.0", port=5000, debug=True)
