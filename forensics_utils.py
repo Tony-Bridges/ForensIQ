@@ -3,9 +3,13 @@ Forensic utilities for file analysis, hashing, and timeline generation.
 """
 import hashlib
 import os
+import stat
+import time
+import math
 import logging
+import re
+import struct
 from datetime import datetime
-import json
 
 try:
     import magic
@@ -86,121 +90,113 @@ def get_file_metadata(file):
 
     return metadata
 
-def analyze_file(file):
-    """Perform forensic analysis on uploaded file."""
-    analysis = {
-        "status": "analyzed",
-        "timestamp": datetime.utcnow().isoformat(),
-        "findings": [],
-        "file_type": "unknown",
-        "entropy": 0.0,
-        "suspicious_indicators": []
-    }
+def analyze_file(file_data):
+    """
+    Perform comprehensive file analysis.
+
+    Args:
+        file_data: File object or file path
+
+    Returns:
+        dict: Analysis results
+    """
+    import magic
+    import os
+    import struct
+    import re
+    from datetime import datetime
 
     try:
-        # Reset file pointer
-        file.seek(0)
-        content = file.read()
-        file.seek(0)
-
-        # Basic analysis
-        analysis["file_size"] = len(content)
-        analysis["findings"].append({
-            "type": "file_analysis",
-            "description": f"File contains {len(content)} bytes",
-            "severity": "info"
-        })
-
-        # Calculate entropy (simple version)
-        if content:
-            byte_counts = [0] * 256
-            for byte in content:
-                byte_counts[byte] += 1
-
-            entropy = 0.0
-            length = len(content)
-            for count in byte_counts:
-                if count > 0:
-                    probability = count / length
-                    entropy -= probability * (probability.bit_length() - 1)
-
-            analysis["entropy"] = round(entropy, 2)
-
-            if entropy > 7.5:
-                analysis["findings"].append({
-                    "type": "high_entropy",
-                    "description": f"High entropy detected ({entropy:.2f}) - possible encryption/compression",
-                    "severity": "medium"
-                })
-
-        # Check for suspicious patterns
-        suspicious_strings = [
-            (b"password", "Password-related content found"),
-            (b"malware", "Malware-related strings detected"),
-            (b"exploit", "Exploit-related content detected"),
-            (b"backdoor", "Backdoor indicators found"),
-            (b"keylog", "Keylogger indicators detected"),
-            (b"trojan", "Trojan indicators found"),
-            (b"virus", "Virus-related content detected")
-        ]
-
-        content_lower = content.lower()
-        for pattern, description in suspicious_strings:
-            if pattern in content_lower:
-                analysis["findings"].append({
-                    "type": "suspicious_content",
-                    "description": description,
-                    "severity": "high" if pattern in [b"malware", b"exploit", b"backdoor"] else "medium"
-                })
-                analysis["suspicious_indicators"].append(pattern.decode())
-
-        # Check for executable signatures
-        pe_signature = b"MZ"  # PE executable
-        elf_signature = b"\x7fELF"  # ELF executable
-
-        if content.startswith(pe_signature):
-            analysis["file_type"] = "PE Executable"
-            analysis["findings"].append({
-                "type": "executable",
-                "description": "Windows PE executable detected",
-                "severity": "medium"
-            })
-        elif content.startswith(elf_signature):
-            analysis["file_type"] = "ELF Executable"
-            analysis["findings"].append({
-                "type": "executable",
-                "description": "Linux ELF executable detected",
-                "severity": "medium"
-            })
-
-        # Check for archive signatures
-        zip_signature = b"PK"
-        if content.startswith(zip_signature):
-            analysis["file_type"] = "ZIP Archive"
-            analysis["findings"].append({
-                "type": "archive",
-                "description": "ZIP archive detected",
-                "severity": "info"
-            })
-
-        # Risk assessment
-        risk_score = len([f for f in analysis["findings"] if f["severity"] == "high"]) * 3
-        risk_score += len([f for f in analysis["findings"] if f["severity"] == "medium"]) * 2
-        risk_score += len([f for f in analysis["findings"] if f["severity"] == "low"])
-
-        analysis["risk_score"] = risk_score
-        if risk_score >= 10:
-            analysis["risk_level"] = "HIGH"
-        elif risk_score >= 5:
-            analysis["risk_level"] = "MEDIUM"
+        # Handle file object or path
+        if hasattr(file_data, 'read'):
+            content = file_data.read()
+            file_data.seek(0)
+            filename = getattr(file_data, 'filename', 'unknown')
         else:
-            analysis["risk_level"] = "LOW"
+            with open(file_data, 'rb') as f:
+                content = f.read()
+            filename = os.path.basename(file_data)
+
+        # File type detection using magic bytes
+        file_type = magic.from_buffer(content, mime=True)
+        file_description = magic.from_buffer(content)
+
+        # Calculate hashes
+        md5_hash = hashlib.md5(content).hexdigest()
+        sha256_hash = hashlib.sha256(content).hexdigest()
+
+        # Extract strings (printable characters)
+        strings = []
+        string_pattern = re.compile(b'[!-~]{4,}')
+        string_matches = string_pattern.findall(content)
+        strings = [s.decode('ascii', errors='ignore') for s in string_matches[:100]]
+
+        # Calculate entropy (for encryption/compression detection)
+        if content:
+            byte_counts = {}
+            for byte in content:
+                byte_counts[byte] = byte_counts.get(byte, 0) + 1
+
+            entropy = 0
+            content_length = len(content)
+            for count in byte_counts.values():
+                probability = count / content_length
+                if probability > 0:
+                    entropy -= probability * math.log2(probability)
+        else:
+            entropy = 0
+
+        # Suspicious indicators detection
+        suspicious_indicators = []
+        suspicious_strings = ['password', 'admin', 'backdoor', 'keylog', 'virus', 
+                            'malware', 'trojan', 'rootkit', 'exploit', 'cmd.exe']
+
+        for string in strings:
+            for indicator in suspicious_strings:
+                if indicator.lower() in string.lower():
+                    suspicious_indicators.append(f'suspicious_string_{indicator}')
+
+        # High entropy suggests encryption/compression
+        if entropy > 7.5:
+            suspicious_indicators.append('high_entropy_encrypted_or_compressed')
+
+        # PE file analysis
+        pe_info = {}
+        if content.startswith(b'MZ'):
+            try:
+                dos_header = content[:64]
+                pe_offset = struct.unpack('<I', dos_header[60:64])[0]
+                if pe_offset < len(content) - 4:
+                    pe_signature = content[pe_offset:pe_offset+4]
+                    if pe_signature == b'PE\x00\x00':
+                        pe_info['is_pe'] = True
+                        # Extract compilation timestamp
+                        if pe_offset + 8 < len(content):
+                            timestamp = struct.unpack('<I', content[pe_offset+8:pe_offset+12])[0]
+                            pe_info['compile_time'] = datetime.fromtimestamp(timestamp).isoformat()
+            except:
+                pass
+
+        return {
+            'filename': filename,
+            'file_type': file_type,
+            'file_description': file_description,
+            'size': len(content),
+            'md5_hash': md5_hash,
+            'sha256_hash': sha256_hash,
+            'entropy': round(entropy, 3),
+            'strings': strings[:50],  # Limit for performance
+            'suspicious_indicators': list(set(suspicious_indicators)),
+            'pe_info': pe_info,
+            'analysis_timestamp': datetime.utcnow().isoformat()
+        }
 
     except Exception as e:
-        analysis["error"] = str(e)
-        logging.error(f"File analysis error: {str(e)}")
-
-    return analysis
+        logging.error(f"File analysis failed: {str(e)}")
+        return {
+            'error': str(e),
+            'analysis_timestamp': datetime.utcnow().isoformat()
+        }
 
 def calculate_entropy(data):
     """Calculate Shannon entropy of data."""
@@ -253,29 +249,83 @@ def check_encryption(content):
         "entropy_score": entropy
     }
 
-def generate_timeline(metadata):
-    """Generate basic timeline from metadata."""
-    timeline = []
+def generate_timeline(evidence_list):
+    """
+    Generate forensic timeline from evidence.
 
-    if metadata.get("created"):
-        timeline.append({
-            "timestamp": metadata["created"],
-            "event": "File Created"
-        })
+    Args:
+        evidence_list: List of evidence items (file paths or Evidence objects)
 
-    if metadata.get("modified"):
-        timeline.append({
-            "timestamp": metadata["modified"],
-            "event": "Last Modified"
-        })
+    Returns:
+        list: Timeline events sorted by timestamp
+    """
+    timeline_events = []
 
-    if metadata.get("accessed"):
-        timeline.append({
-            "timestamp": metadata["accessed"],
-            "event": "Last Accessed"
-        })
+    for evidence in evidence_list:
+        try:
+            if isinstance(evidence, str):
+                # File path
+                file_path = evidence
+                if not os.path.exists(file_path):
+                    continue
 
-    return sorted(timeline, key=lambda x: x["timestamp"])
+                stat_info = os.stat(file_path)
+                filename = os.path.basename(file_path)
+
+                # Creation time (Windows) or change time (Unix)
+                if hasattr(stat_info, 'st_birthtime'):
+                    created_time = stat_info.st_birthtime
+                else:
+                    created_time = stat_info.st_ctime
+
+                timeline_events.append({
+                    'timestamp': datetime.fromtimestamp(created_time).isoformat(),
+                    'event': 'File Created',
+                    'source': filename,
+                    'details': f'File created: {file_path}',
+                    'file_size': stat_info.st_size,
+                    'permissions': oct(stat_info.st_mode)[-3:]
+                })
+
+                # Modification time
+                timeline_events.append({
+                    'timestamp': datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
+                    'event': 'File Modified',
+                    'source': filename,
+                    'details': f'File modified: {file_path}',
+                    'file_size': stat_info.st_size,
+                    'permissions': oct(stat_info.st_mode)[-3:]
+                })
+
+                # Access time
+                timeline_events.append({
+                    'timestamp': datetime.fromtimestamp(stat_info.st_atime).isoformat(),
+                    'event': 'File Accessed',
+                    'source': filename,
+                    'details': f'File accessed: {file_path}',
+                    'file_size': stat_info.st_size,
+                    'permissions': oct(stat_info.st_mode)[-3:]
+                })
+
+            else:
+                # Evidence object from database
+                timeline_events.append({
+                    'timestamp': evidence.timestamp.isoformat() if evidence.timestamp else datetime.utcnow().isoformat(),
+                    'event': 'Evidence Added',
+                    'source': evidence.filename,
+                    'details': f'Evidence file: {evidence.filename}',
+                    'file_size': evidence.file_size,
+                    'hash': evidence.file_hash
+                })
+
+        except Exception as e:
+            logging.error(f"Timeline generation error for {evidence}: {str(e)}")
+            continue
+
+    # Sort timeline by timestamp
+    timeline_events.sort(key=lambda x: x['timestamp'])
+
+    return timeline_events
 
 def write_block_check(file):
     """Implement basic write-blocking check."""

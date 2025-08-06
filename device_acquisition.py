@@ -40,22 +40,81 @@ class DeviceAcquisition:
     
     def _detect_android_devices(self):
         """Detect connected Android devices."""
+        devices = []
         try:
-            devices = []
+            import subprocess
+            
+            # Use ADB to list devices
             try:
-                device = AdbDeviceUsb()
-                if device.connect(timeout_ms=5000):
-                    devices.append({
-                        'id': device.serial_number,
-                        'type': 'android',
-                        'status': 'connected'
-                    })
-                return devices
-            except:
-                return [{'id': 'No devices found', 'type': 'android', 'status': 'disconnected'}]
+                result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split('\n')[1:]  # Skip header
+                    for line in lines:
+                        if line.strip() and '\t' in line:
+                            device_id, status = line.strip().split('\t')
+                            devices.append({
+                                'id': device_id,
+                                'type': 'android',
+                                'status': status,
+                                'connection': 'adb'
+                            })
+                            
+                            # Get additional device info
+                            try:
+                                model_result = subprocess.run(['adb', '-s', device_id, 'shell', 'getprop', 'ro.product.model'], 
+                                                            capture_output=True, text=True, timeout=5)
+                                if model_result.returncode == 0:
+                                    devices[-1]['model'] = model_result.stdout.strip()
+                                    
+                                version_result = subprocess.run(['adb', '-s', device_id, 'shell', 'getprop', 'ro.build.version.release'], 
+                                                              capture_output=True, text=True, timeout=5)
+                                if version_result.returncode == 0:
+                                    devices[-1]['android_version'] = version_result.stdout.strip()
+                            except:
+                                pass
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                # ADB not available or timeout
+                pass
+            
+            # Fallback to USB detection
+            if not devices:
+                try:
+                    import usb.core
+                    # Look for Android devices by vendor ID
+                    android_vendors = [0x18d1, 0x04e8, 0x22b8, 0x0bb4, 0x12d1]  # Google, Samsung, Motorola, HTC, Huawei
+                    
+                    for vendor_id in android_vendors:
+                        usb_devices = usb.core.find(find_all=True, idVendor=vendor_id)
+                        for device in usb_devices:
+                            devices.append({
+                                'id': f'USB_{vendor_id:04x}_{device.idProduct:04x}',
+                                'type': 'android',
+                                'status': 'detected_usb',
+                                'vendor_id': vendor_id,
+                                'product_id': device.idProduct,
+                                'connection': 'usb'
+                            })
+                except ImportError:
+                    pass
+                    
+            if not devices:
+                devices.append({
+                    'id': 'No Android devices found',
+                    'type': 'android',
+                    'status': 'not_found',
+                    'message': 'No Android devices detected. Enable USB debugging and connect device.'
+                })
+                
         except Exception as e:
             self.logger.error(f"Error detecting Android devices: {str(e)}")
-            return [{'id': 'No devices found', 'type': 'android', 'status': 'disconnected'}]
+            devices.append({
+                'id': 'Detection failed',
+                'type': 'android',
+                'status': 'error',
+                'error': str(e)
+            })
+            
+        return devices
     
     def acquire_device_data(self, device_id, device_type, acquisition_type='logical'):
         """
