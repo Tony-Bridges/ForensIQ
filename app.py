@@ -52,7 +52,6 @@ from forensics_utils import (
     generate_timeline,
     write_block_check
 )
-from models import User, Investigation, InvestigationUser, InvestigationComment, AuditLog
 from auth import (
     AuthManager as AuthenticationManager, require_auth, require_permission, create_admin_user
 )
@@ -77,7 +76,7 @@ from threat_intelligence import ThreatIntelligence
 from search_regex import SearchRegex
 
 # Import models after db initialization
-from models import Evidence, ChainOfCustody, DeviceAcquisitionRecord, Analysis
+from models import User, Investigation, InvestigationUser, InvestigationComment, AuditLog, Evidence, ChainOfCustody, DeviceAcquisitionRecord, Analysis
 
 # Initialize the database tables and create admin user
 with app.app_context():
