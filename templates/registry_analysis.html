@@ -380,3 +380,39 @@
 }
 </style>
 {% endblock %}
+{% extends "layout.html" %}
+
+{% block title %}Registry Analysis - ForensIQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-database me-2"></i>Registry Analysis
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Registry analysis functionality is currently under development.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Registry Hive Analysis</h5>
+                            <p>Analyze Windows registry hives for forensic evidence.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Key Search</h5>
+                            <p>Search for specific registry keys and values.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

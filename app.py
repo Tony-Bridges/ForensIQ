@@ -435,6 +435,30 @@ def investigations():
     """Investigations page."""
     return render_template("investigations.html")
 
+@app.route("/analyze")
+@require_auth
+def analyze():
+    """File analysis page."""
+    return render_template("analysis.html")
+
+@app.route("/registry_analysis")
+@require_auth
+def registry_analysis():
+    """Registry analysis page."""
+    return render_template("registry_analysis.html")
+
+@app.route("/devices")
+@require_auth
+def devices():
+    """Device acquisition page."""
+    return render_template("device_acquisition.html")
+
+@app.route("/network")
+@require_auth
+def network():
+    """Network scanning page."""
+    return render_template("network_scan.html")
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template("404.html"), 404
