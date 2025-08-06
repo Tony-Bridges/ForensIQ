@@ -345,6 +345,96 @@ def admin():
 
     return render_template("admin.html", **admin_data)
 
+@app.route("/detect_devices")
+@require_auth
+def detect_devices():
+    """Device detection page."""
+    return render_template("device_acquisition.html")
+
+@app.route("/analysis")
+@require_auth
+def analysis():
+    """Analysis page."""
+    return render_template("analysis.html")
+
+@app.route("/network_scan")
+@require_auth
+def network_scan():
+    """Network scanning page."""
+    return render_template("network_scan.html")
+
+@app.route("/ai_analysis")
+@require_auth
+def ai_analysis():
+    """AI analysis page."""
+    return render_template("ai_analysis.html")
+
+@app.route("/cloud_forensics")
+@require_auth
+def cloud_forensics():
+    """Cloud forensics page."""
+    return render_template("cloud_forensics.html")
+
+@app.route("/blockchain_analysis")
+@require_auth
+def blockchain_analysis():
+    """Blockchain analysis page."""
+    return render_template("blockchain_analysis.html")
+
+@app.route("/mobile_iot_forensics")
+@require_auth
+def mobile_iot_forensics():
+    """Mobile IoT forensics page."""
+    return render_template("mobile_iot_forensics.html")
+
+@app.route("/encryption_analysis")
+@require_auth
+def encryption_analysis():
+    """Encryption analysis page."""
+    return render_template("encryption_analysis.html")
+
+@app.route("/network_analysis")
+@require_auth
+def network_analysis():
+    """Network analysis page."""
+    return render_template("network_analysis.html")
+
+@app.route("/timeline_analysis")
+@require_auth
+def timeline_analysis():
+    """Timeline analysis page."""
+    return render_template("timeline_analysis.html")
+
+@app.route("/live_forensics")
+@require_auth
+def live_forensics():
+    """Live forensics page."""
+    return render_template("live_forensics.html")
+
+@app.route("/sandbox_analysis")
+@require_auth
+def sandbox_analysis():
+    """Sandbox analysis page."""
+    return render_template("sandbox_analysis.html")
+
+@app.route("/threat_intelligence")
+@require_auth
+def threat_intelligence():
+    """Threat intelligence page."""
+    return render_template("threat_intelligence.html")
+
+@app.route("/search_analysis")
+@require_auth
+def search_analysis():
+    """Search analysis page."""
+    return render_template("search_analysis.html")
+
+@app.route("/investigations")
+@require_auth
+def investigations():
+    """Investigations page."""
+    return render_template("investigations.html")
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template("404.html"), 404
