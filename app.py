@@ -10,10 +10,8 @@ from werkzeug.security import generate_password_hash
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
+# Import db from models to avoid circular imports
+from models import db
 
 # Create the app
 app = Flask(__name__)
@@ -30,8 +28,8 @@ def add_security_headers(response):
 # Database configuration with fallback
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
-    # Fallback to SQLite for development
-    database_url = "sqlite:///instance/forensics.db"
+    # Fallback to SQLite for development - use current directory
+    database_url = "sqlite:///forensics.db"
     
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -75,38 +73,46 @@ from sandbox_analysis import SandboxAnalysis
 from threat_intelligence import ThreatIntelligence
 from search_regex import SearchRegex
 
-# Import models after db initialization
-from models import User, Investigation, InvestigationUser, InvestigationComment, AuditLog, Evidence, ChainOfCustody, DeviceAcquisitionRecord, Analysis
+# Models will be imported after app initialization to avoid circular imports
 
 def initialize_database():
     """Initialize the database tables and create admin user."""
     try:
-        # Ensure instance directory exists with proper permissions
-        os.makedirs('instance', exist_ok=True)
-        os.chmod('instance', 0o755)
+        # Use a simpler database path in the current directory
+        db_path = 'forensics.db'
         
-        # Check if database file exists and create if needed
-        db_path = 'instance/forensics.db'
-        if not os.path.exists(db_path):
-            # Create empty database file with proper permissions
-            open(db_path, 'a').close()
-            os.chmod(db_path, 0o644)
+        # Remove the old instance directory approach
+        if os.path.exists('instance/forensics.db'):
+            try:
+                os.remove('instance/forensics.db')
+            except:
+                pass
         
-        db.create_all()
+        # Update the database URI to use current directory
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+        
+        # Reinitialize the database with new URI
+        db.init_app(app)
+        
+        with app.app_context():
+            db.create_all()
 
-        # Create default admin user if none exists
-        admin_user = User.query.filter_by(role='admin').first()
-        if not admin_user:
-            admin = User(
-                username='admin',
-                email='admin@forensiq.local',
-                password_hash=generate_password_hash('admin123'),
-                role='admin',
-                is_active=True
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("✅ Default admin user created: admin/admin123")
+            # Create default admin user if none exists
+            try:
+                admin_user = User.query.filter_by(role='admin').first()
+                if not admin_user:
+                    admin = User(
+                        username='admin',
+                        email='admin@forensiq.local',
+                        password_hash=generate_password_hash('admin123'),
+                        role='admin',
+                        is_active=True
+                    )
+                    db.session.add(admin)
+                    db.session.commit()
+                    print("✅ Default admin user created: admin/admin123")
+            except Exception as user_error:
+                print(f"⚠️ Could not create admin user: {str(user_error)}")
 
         print("✅ Database initialized successfully")
         print(f"📊 Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
@@ -114,17 +120,7 @@ def initialize_database():
     except Exception as e:
         print(f"❌ Database initialization error: {str(e)}")
         logging.error(f"Database error: {str(e)}")
-        # Try to fix common issues
-        try:
-            # Drop and recreate tables if there are schema issues
-            db.drop_all()
-            db.create_all()
-            print("✅ Database schema rebuilt")
-            return True
-        except Exception as e2:
-            print(f"❌ Failed to rebuild database: {str(e2)}")
-            logging.error(f"Database rebuild error: {str(e2)}")
-            return False
+        return False
 
 # Initialize forensics handlers
 device_handler = DeviceAcquisition()
@@ -147,6 +143,9 @@ report_scheduler = ScheduledReportManager()
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """User login."""
+    # Import models here to avoid circular imports
+    from models import User, AuditLog
+    
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")

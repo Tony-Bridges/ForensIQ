@@ -1,4 +1,11 @@
-from app import db
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
+
+class Base(DeclarativeBase):
+    pass
+
+# This will be initialized from app.py
+db = SQLAlchemy(model_class=Base)
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
