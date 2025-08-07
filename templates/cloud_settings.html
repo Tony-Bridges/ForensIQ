@@ -1,0 +1,181 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i data-feather="settings"></i> Cloud Provider Credentials</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="mb-3">
+                        <label for="cloud_provider" class="form-label">Cloud Provider</label>
+                        <select class="form-select" id="cloud_provider" name="cloud_provider" required>
+                            <option value="">Select cloud provider...</option>
+                            <option value="aws" {% if request.form.get('cloud_provider') == 'aws' %}selected{% endif %}>Amazon Web Services (AWS)</option>
+                            <option value="azure" {% if request.form.get('cloud_provider') == 'azure' %}selected{% endif %}>Microsoft Azure</option>
+                            <option value="gcp" {% if request.form.get('cloud_provider') == 'gcp' %}selected{% endif %}>Google Cloud Platform (GCP)</option>
+                        </select>
+                    </div>
+
+                    <!-- AWS Credentials -->
+                    <div id="aws-credentials" class="provider-credentials" style="display: none;">
+                        <div class="mb-3">
+                            <label for="aws_access_key" class="form-label">Access Key ID</label>
+                            <input type="text" class="form-control" id="aws_access_key" name="aws_access_key" 
+                                   value="{{ request.form.get('aws_access_key', '') }}" placeholder="AKIAXXXXXXXXXXXXXXXX">
+                        </div>
+                        <div class="mb-3">
+                            <label for="aws_secret_key" class="form-label">Secret Access Key</label>
+                            <input type="password" class="form-control" id="aws_secret_key" name="aws_secret_key" 
+                                   value="{{ request.form.get('aws_secret_key', '') }}" placeholder="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
+                        </div>
+                        <div class="mb-3">
+                            <label for="aws_region" class="form-label">Default Region</label>
+                            <input type="text" class="form-control" id="aws_region" name="aws_region" 
+                                   value="{{ request.form.get('aws_region', 'us-east-1') }}" placeholder="us-east-1">
+                        </div>
+                        <div class="alert alert-info">
+                            <small><i data-feather="info"></i> Ensure the IAM user has read-only access to required services (CloudTrail, S3, IAM, etc.)</small>
+                        </div>
+                    </div>
+
+                    <!-- Azure Credentials -->
+                    <div id="azure-credentials" class="provider-credentials" style="display: none;">
+                        <div class="mb-3">
+                            <label for="azure_subscription_id" class="form-label">Subscription ID</label>
+                            <input type="text" class="form-control" id="azure_subscription_id" name="azure_subscription_id" 
+                                   value="{{ request.form.get('azure_subscription_id', '') }}" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX">
+                        </div>
+                        <div class="mb-3">
+                            <label for="azure_tenant_id" class="form-label">Tenant ID</label>
+                            <input type="text" class="form-control" id="azure_tenant_id" name="azure_tenant_id" 
+                                   value="{{ request.form.get('azure_tenant_id', '') }}" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX">
+                        </div>
+                        <div class="mb-3">
+                            <label for="azure_client_id" class="form-label">Client ID</label>
+                            <input type="text" class="form-control" id="azure_client_id" name="azure_client_id" 
+                                   value="{{ request.form.get('azure_client_id', '') }}" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX">
+                        </div>
+                        <div class="mb-3">
+                            <label for="azure_client_secret" class="form-label">Client Secret</label>
+                            <input type="password" class="form-control" id="azure_client_secret" name="azure_client_secret" 
+                                   value="{{ request.form.get('azure_client_secret', '') }}" placeholder="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
+                        </div>
+                        <div class="alert alert-info">
+                            <small><i data-feather="info"></i> The service principal must have 'Reader' role on the subscription</small>
+                        </div>
+                    </div>
+
+                    <!-- GCP Credentials -->
+                    <div id="gcp-credentials" class="provider-credentials" style="display: none;">
+                        <div class="mb-3">
+                            <label for="gcp_project_id" class="form-label">Project ID</label>
+                            <input type="text" class="form-control" id="gcp_project_id" name="gcp_project_id" 
+                                   value="{{ request.form.get('gcp_project_id', '') }}" placeholder="my-project-123456">
+                        </div>
+                        <div class="mb-3">
+                            <label for="gcp_credentials_json" class="form-label">Service Account JSON</label>
+                            <textarea class="form-control" id="gcp_credentials_json" name="gcp_credentials_json" 
+                                      rows="8" placeholder='Paste full service account JSON credentials'>{{ request.form.get('gcp_credentials_json', '') }}</textarea>
+                        </div>
+                        <div class="alert alert-info">
+                            <small><i data-feather="info"></i> The service account must have 'Viewer' permissions</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="save"></i> Save Credentials
+                        </button>
+                        <a href="{{ url_for('cloud_forensics') }}" class="btn btn-outline-secondary">
+                            <i data-feather="arrow-left"></i> Back to Forensics
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if session.get('cloud_credentials') %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i data-feather="shield"></i> Current Credential Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Provider</th>
+                                <th>Configured</th>
+                                <th>Last Used</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for provider, creds in session.get('cloud_credentials', {}).items() %}
+                            <tr>
+                                <td>{{ provider|upper }}</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i data-feather="check-circle"></i> Configured
+                                    </span>
+                                </td>
+                                <td>{{ session.get('last_cloud_usage', {}).get(provider, 'Never') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="confirmDelete('{{ provider }}')">
+                                        <i data-feather="trash-2"></i> Remove
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-warning mt-3">
+                    <small><i data-feather="alert-triangle"></i> Credentials are stored in session only and will be cleared when you log out.</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Show/hide credential fields based on selected provider
+document.getElementById('cloud_provider').addEventListener('change', function() {
+    const provider = this.value;
+    document.querySelectorAll('.provider-credentials').forEach(el => {
+        el.style.display = 'none';
+    });
+
+    if (provider) {
+        document.getElementById(`${provider}-credentials`).style.display = 'block';
+    }
+});
+
+// Initialize based on current selection
+if (document.getElementById('cloud_provider').value) {
+    document.getElementById('cloud_provider').dispatchEvent(new Event('change'));
+}
+
+function confirmDelete(provider) {
+    if (confirm(`Are you sure you want to remove ${provider.toUpperCase()} credentials?`)) {
+        fetch(`/clear_credentials/${provider}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

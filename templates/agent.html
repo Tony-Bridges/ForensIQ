@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.5">
+    <title>Deploy Agent - ForensIQ</title>
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Particles.js for background effects -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    
+    <style>
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background-color: #212529;
+            transition: all 0.3s;
+            position: fixed;
+            z-index: 1000;
+        }
+        
+        .sidebar-collapsed {
+            margin-left: -250px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s;
+            padding-top: 60px;
+        }
+        
+        .content-expanded {
+            margin-left: 0;
+        }
+        
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            font-size: 1.2rem;
+            display: block;
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-nav {
+            padding: 0;
+            list-style: none;
+        }
+        
+        .sidebar-nav-item {
+            position: relative;
+        }
+        
+        .sidebar-nav-link {
+            padding: 0.75rem 1rem;
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .sidebar-nav-link:hover, .sidebar-nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-nav-link i {
+            margin-right: 0.5rem;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .sidebar-dropdown-menu {
+            padding: 0;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .sidebar-dropdown-item {
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .sidebar-dropdown-item:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-dropdown-toggle::after {
+            display: inline-block;
+            margin-left: auto;
+            content: "▾";
+            transition: transform 0.3s;
+        }
+        
+        .sidebar-dropdown-toggle.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 250px;
+            z-index: 999;
+            transition: all 0.3s;
+        }
+        
+        .top-navbar-expanded {
+            left: 0;
+        }
+
+        /* Custom card styling */
+        .card-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .accordion-dark .accordion-button:not(.collapsed) {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .accordion-dark .accordion-button:focus {
+            box-shadow: none;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .deployment-log {
+            background-color: #2c3034 !important;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .form-control, .form-select {
+            background-color: #2c3034;
+            border-color: #495057;
+            color: white;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #2c3034;
+            border-color: #0d6efd;
+            color: white;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        /* Tab styling */
+        .nav-tabs .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            border-color: #495057;
+            background-color: #2c3034;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: white;
+            background-color: #212529;
+            border-color: #495057 #495057 #212529;
+        }
+
+        .nav-tabs .nav-link:hover:not(.active) {
+            border-color: #495057;
+            background-color: #343a40;
+        }
+
+        .tab-content {
+            background-color: #212529;
+            border: 1px solid #495057;
+            border-top: none;
+            padding: 1.5rem;
+            border-radius: 0 0 0.375rem 0.375rem;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+            
+            .sidebar-expanded {
+                margin-left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .top-navbar {
+                left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <a class="sidebar-brand" href="{{ url_for('index') }}">
+            <i class="fas fa-shield-alt me-2"></i>
+            <span class="brand-text">ForensIQ</span>
+            <span class="brand-subtitle">Enterprise</span>
+        </a>
+        
+        <ul class="sidebar-nav">
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" href="{{ url_for('dashboard') }}">
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link sidebar-dropdown-toggle collapsed" data-bs-toggle="collapse" href="#analysisTools">
+                    <i class="fas fa-search"></i>Analysis Tools
+                </a>
+                <div class="collapse sidebar-dropdown-menu" id="analysisTools">
+                    <a class="sidebar-dropdown-item" href="{{ url_for('analyze') }}"><i class="fas fa-file-upload me-2"></i>File Analysis</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('ai_analysis') }}"><i class="fas fa-brain me-2"></i>AI Intelligence</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('network_analysis') }}"><i class="fas fa-network-wired me-2"></i>Network Analysis</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('registry_analysis') }}"><i class="fas fa-database me-2"></i>Registry Analysis</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('timeline_analysis') }}"><i class="fas fa-clock me-2"></i>Timeline Analysis</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('search_analysis') }}"><i class="fas fa-search me-2"></i>Search & Regex</a>
+                </div>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link sidebar-dropdown-toggle collapsed" data-bs-toggle="collapse" href="#mobileIoT">
+                    <i class="fas fa-mobile-alt"></i>Mobile & IoT
+                </a>
+                <div class="collapse sidebar-dropdown-menu" id="mobileIoT">
+                    <a class="sidebar-dropdown-item" href="{{ url_for('detect_devices') }}"><i class="fas fa-search me-2"></i>Device Detection</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('mobile_iot_forensics') }}"><i class="fas fa-mobile-alt me-2"></i>Mobile Analysis</a>
+                </div>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link sidebar-dropdown-toggle collapsed" data-bs-toggle="collapse" href="#cloudNetwork">
+                    <i class="fas fa-cloud"></i>Cloud & Network
+                </a>
+                <div class="collapse sidebar-dropdown-menu" id="cloudNetwork">
+                    <a class="sidebar-dropdown-item" href="{{ url_for('cloud_forensics') }}"><i class="fas fa-cloud me-2"></i>Cloud Forensics</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('network_scan') }}"><i class="fas fa-network-wired me-2"></i>Network Scanner</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('network_analysis') }}"><i class="fas fa-chart-network me-2"></i>Network Analysis</a>
+                </div>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link sidebar-dropdown-toggle collapsed" data-bs-toggle="collapse" href="#securityAnalysis">
+                    <i class="fas fa-lock"></i>Security Analysis
+                </a>
+                <div class="collapse sidebar-dropdown-menu" id="securityAnalysis">
+                    <a class="sidebar-dropdown-item" href="{{ url_for('encryption_analysis') }}"><i class="fas fa-key me-2"></i>Encryption Analysis</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('blockchain_analysis') }}"><i class="fas fa-coins me-2"></i>Blockchain Forensics</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('threat_intelligence') }}"><i class="fas fa-shield-virus me-2"></i>Threat Intelligence</a>
+                </div>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link sidebar-dropdown-toggle collapsed" data-bs-toggle="collapse" href="#advancedTools">
+                    <i class="fas fa-tools"></i>Advanced Tools
+                </a>
+                <div class="collapse sidebar-dropdown-menu" id="advancedTools">
+                    <a class="sidebar-dropdown-item" href="{{ url_for('analyze') }}"><i class="fas fa-file-alt me-2"></i>File Analysis</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('live_forensics') }}"><i class="fas fa-broadcast-tower me-2"></i>Live Forensics</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('sandbox_analysis') }}"><i class="fas fa-cube me-2"></i>Sandbox Analysis</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('search_analysis') }}"><i class="fas fa-search me-2"></i>Search & Regex</a>
+                </div>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link sidebar-dropdown-toggle collapsed" data-bs-toggle="collapse" href="#acquisition">
+                    <i class="fas fa-mobile-alt"></i>Acquisition
+                </a>
+                <div class="collapse sidebar-dropdown-menu" id="acquisition">
+                    <a class="sidebar-dropdown-item" href="{{ url_for('devices') }}"><i class="fas fa-mobile-alt me-2"></i>Device Acquisition</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('network') }}"><i class="fas fa-wifi me-2"></i>Network Scan</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('live_forensics') }}"><i class="fas fa-satellite-dish me-2"></i>Live Forensics</a>
+                    <a class="sidebar-dropdown-item" href="{{ url_for('sandbox_analysis') }}"><i class="fas fa-cube me-2"></i>Sandbox Analysis</a>
+                </div>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" href="{{ url_for('reports') }}">
+                    <i class="fas fa-file-alt"></i>Reports
+                </a>
+            </li>
+            
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link sidebar-dropdown-toggle collapsed" data-bs-toggle="collapse" href="#system">
+                    <i class="fas fa-cog"></i>System
+                </a>
+                <div class="collapse sidebar-dropdown-menu" id="system">
+                    <a class="sidebar-dropdown-item" href="{{ url_for('settings') }}"><i class="fas fa-cog me-2"></i>Settings</a>
+                    <a class="dropdown-item" href="{{ url_for('admin') }}"><i class="fas fa-users-cog me-2"></i>Admin Portal</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark top-navbar">
+        <div class="container-fluid">
+            <button class="btn btn-dark" type="button" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="d-flex align-items-center ms-auto">
+                <span class="navbar-text system-status me-3">
+                    <span class="status-indicator status-online"></span>
+                    <span class="d-none d-md-inline">System Online</span>
+                </span>
+                
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-1"></i>
+                        <span class="d-none d-md-inline">Admin</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('settings') }}">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports') }}">
+                            <i class="fas fa-file-contract me-2"></i>Reports
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Notification Area -->
+        <div id="notification-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="fas fa-download me-2"></i>
+                Deploy Forensic Agents
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <a href="{{ url_for('list_agents') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    Back to Agents
+                </a>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-3" id="agentTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="deployment-tab" data-bs-toggle="tab" data-bs-target="#deployment" type="button" role="tab" aria-controls="deployment" aria-selected="true">
+                    <i class="fas fa-download me-1"></i> Agent Deployment
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="federated-tab" data-bs-toggle="tab" data-bs-target="#federated" type="button" role="tab" aria-controls="federated" aria-selected="false">
+                    <i class="fas fa-share-alt me-1"></i> Federated Learning
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="management-tab" data-bs-toggle="tab" data-bs-target="#management" type="button" role="tab" aria-controls="management" aria-selected="false">
+                    <i class="fas fa-cog me-1"></i> Agent Management
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="agentTabsContent">
+            <!-- Deployment Tab -->
+            <div class="tab-pane fade show active" id="deployment" role="tabpanel" aria-labelledby="deployment-tab">
+                <!-- Deployment Options -->
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card bg-dark text-light mb-4">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-cog me-2"></i>
+                                    Deployment Configuration
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="deployment-form">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="platform" class="form-label">Target Platform</label>
+                                            <select class="form-select bg-secondary text-light border-secondary" id="platform" name="platform" required>
+                                                <option value="">Select Platform</option>
+                                                <option value="windows">Windows</option>
+                                                <option value="linux">Linux</option>
+                                                <option value="macos">macOS</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="deployment-method" class="form-label">Deployment Method</label>
+                                            <select class="form-select bg-secondary text-light border-secondary" id="deployment-method" name="method">
+                                                <option value="manual">Manual Installation</option>
+                                                <option value="remote">Remote Deployment</option>
+                                                <option value="group_policy">Group Policy (Windows)</option>
+                                                <option value="ansible">Ansible (Linux)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="target-ips" class="form-label">Target IP Addresses</label>
+                                        <textarea class="form-control bg-secondary text-light border-secondary" 
+                                                  id="target-ips" name="target_ips" rows="4" 
+                                                  placeholder="Enter IP addresses, one per line:&#10;192.168.1.100&#10;192.168.1.101&#10;10.0.0.50"></textarea>
+                                        <div class="form-text text-muted">
+                                            Enter one IP address per line. IPv4 and IPv6 addresses are supported.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="agent-version" class="form-label">Agent Version</label>
+                                            <select class="form-select bg-secondary text-light border-secondary" id="agent-version">
+                                                <option value="1.0.0" selected>1.0.0 (Latest)</option>
+                                                <option value="0.9.5">0.9.5</option>
+                                                <option value="0.9.0">0.9.0</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="collection-interval" class="form-label">Collection Interval (minutes)</label>
+                                            <input type="number" class="form-control bg-secondary text-light border-secondary" 
+                                                   id="collection-interval" value="30" min="5" max="1440">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Agent Capabilities</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="memory-capture" checked>
+                                                    <label class="form-check-label" for="memory-capture">Memory Capture</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="file-hashing" checked>
+                                                    <label class="form-check-label" for="file-hashing">File Hashing</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="network-monitoring" checked>
+                                                    <label class="form-check-label" for="network-monitoring">Network Monitoring</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="process-analysis" checked>
+                                                    <label class="form-check-label" for="process-analysis">Process Analysis</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="system-info" checked>
+                                                    <label class="form-check-label" for="system-info">System Information</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="federated-learning">
+                                                    <label class="form-check-label" for="federated-learning">Federated Learning</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4" id="deployment-credentials" style="display: none;">
+                                        <h6 class="mb-3">Remote Deployment Credentials</h6>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="username" class="form-label">Username</label>
+                                                <input type="text" class="form-control bg-secondary text-light border-secondary" 
+                                                       id="username" name="username">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="password" class="form-label">Password</label>
+                                                <input type="password" class="form-control bg-secondary text-light border-secondary" 
+                                                       id="password" name="password">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" class="btn btn-secondary" onclick="previewDeployment()">
+                                            <i class="fas fa-eye me-1"></i>
+                                            Preview Configuration
+                                        </button>
+                                        <div>
+                                            <button type="button" class="btn btn-outline-primary me-2" onclick="generateInstaller()">
+                                                <i class="fas fa-box me-1"></i>
+                                                Generate Installer
+                                            </button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-play me-1"></i>
+                                                Deploy Agents
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Deployment Progress -->
+                        <div class="card bg-dark text-light" id="deployment-progress" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-tasks me-2"></i>
+                                    Deployment Progress
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Overall Progress</span>
+                                        <span id="progress-percentage">0%</span>
+                                    </div>
+                                    <div class="progress bg-secondary">
+                                        <div class="progress-bar bg-primary" id="progress-bar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="deployment-log bg-secondary p-3 rounded" style="height: 200px; overflow-y: auto;">
+                                    <div id="deployment-log-content">
+                                        <div class="text-muted">Deployment log will appear here...</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 d-flex justify-content-between">
+                                    <div>
+                                        <span class="badge bg-success me-2">
+                                            <span id="successful-deployments">0</span> Successful
+                                        </span>
+                                        <span class="badge bg-danger me-2">
+                                            <span id="failed-deployments">0</span> Failed
+                                        </span>
+                                        <span class="badge bg-warning">
+                                            <span id="pending-deployments">0</span> Pending
+                                        </span>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" id="cancel-deployment" style="display: none;" onclick="cancelDeployment()">
+                                        <i class="fas fa-times me-1"></i>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Deployment Guide -->
+                    <div class="col-lg-4">
+                        <div class="card bg-dark text-light mb-4">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Platform-Specific Binaries
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6 class="text-primary">Windows Agent</h6>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-desktop me-2"></i>
+                                        <span>forensiq-agent-windows.exe</span>
+                                    </div>
+                                    <small class="text-muted">Supports Windows 10/11, Windows Server 2016+</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-success">Linux Agent</h6>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-terminal me-2"></i>
+                                        <span>forensiq-agent-linux</span>
+                                    </div>
+                                    <small class="text-muted">Supports Ubuntu 18.04+, RHEL 7+, CentOS 7+</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-info">macOS Agent</h6>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fab fa-apple me-2"></i>
+                                        <span>forensiq-agent-macos</span>
+                                    </div>
+                                    <small class="text-muted">Supports macOS 10.15+, Apple Silicon & Intel</small>
+                                </div>
+                                
+                                <hr class="border-secondary">
+                                
+                                <div class="text-center">
+                                    <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="downloadAllBinaries()">
+                                        <i class="fas fa-download me-1"></i>
+                                        Download All Binaries
+                                    </button>
+                                    <small class="text-muted">Binary packages include installation scripts</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-dark text-light mb-4">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-book me-2"></i>
+                                    Deployment Guide
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="accordion accordion-dark" id="deployment-guide">
+                                    <div class="accordion-item bg-secondary border-secondary">
+                                        <h2 class="accordion-header" id="manual-deployment">
+                                            <button class="accordion-button collapsed bg-secondary text-light" type="button" 
+                                                    data-bs-toggle="collapse" data-bs-target="#manual-collapse">
+                                                Manual Deployment
+                                            </button>
+                                        </h2>
+                                        <div id="manual-collapse" class="accordion-collapse collapse" data-bs-parent="#deployment-guide">
+                                            <div class="accordion-body bg-dark text-light">
+                                                <ol class="small">
+                                                    <li>Download appropriate binary</li>
+                                                    <li>Copy to target system</li>
+                                                    <li>Run with administrator privileges</li>
+                                                    <li>Agent will auto-register with server</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="accordion-item bg-secondary border-secondary">
+                                        <h2 class="accordion-header" id="remote-deployment">
+                                            <button class="accordion-button collapsed bg-secondary text-light" type="button" 
+                                                    data-bs-toggle="collapse" data-bs-target="#remote-collapse">
+                                                Remote Deployment
+                                            </button>
+                                        </h2>
+                                        <div id="remote-collapse" class="accordion-collapse collapse" data-bs-parent="#deployment-guide">
+                                            <div class="accordion-body bg-dark text-light">
+                                                <ol class="small">
+                                                    <li>Ensure SSH/WinRM access to targets</li>
+                                                    <li>Provide valid credentials</li>
+                                                    <li>ForensIQ will handle installation</li>
+                                                    <li>Monitor deployment progress</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-dark text-light">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    Security Notes
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <strong>Important:</strong> All agent communications are encrypted using TLS 1.3 with certificate pinning.
+                                </div>
+                                <ul class="small mb-0">
+                                    <li>Agents use mutual TLS authentication</li>
+                                    <li>Evidence is encrypted at rest and in transit</li>
+                                    <li>Zero-knowledge federated learning protocols</li>
+                                    <li>Automatic security updates available</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Federated Learning Tab -->
+            <div class="tab-pane fade" id="federated" role="tabpanel" aria-labelledby="federated-tab">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card bg-dark text-light mb-4">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-share-alt me-2"></i>
+                                    Federated Learning Configuration
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="federated-form">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="fl-model" class="form-label">Model</label>
+                                            <select class="form-select bg-secondary text-light border-secondary" id="fl-model" required>
+                                                <option value="">Select Model</option>
+                                                <option value="malware">Malware Detection</option>
+                                                <option value="anomaly">Anomaly Detection</option>
+                                                <option value="intrusion">Intrusion Detection</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="fl-rounds" class="form-label">Training Rounds</label>
+                                            <input type="number" class="form-control bg-secondary text-light border-secondary" 
+                                                   id="fl-rounds" value="5" min="1" max="50">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="fl-agents" class="form-label">Participating Agents</label>
+                                        <select class="form-select bg-secondary text-light border-secondary" id="fl-agents" multiple>
+                                            <option value="all" selected>All Agents with Federated Learning Enabled</option>
+                                            <option value="windows">Windows Agents Only</option>
+                                            <option value="linux">Linux Agents Only</option>
+                                            <option value="macos">macOS Agents Only</option>
+                                        </select>
+                                        <div class="form-text text-muted">
+                                            Hold Ctrl/Cmd to select multiple options
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Federated Learning Parameters</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="fl-learning-rate" class="form-label">Learning Rate</label>
+                                                    <input type="number" step="0.001" class="form-control bg-secondary text-light border-secondary" 
+                                                           id="fl-learning-rate" value="0.01" min="0.0001" max="1">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="fl-batch-size" class="form-label">Batch Size</label>
+                                                    <input type="number" class="form-control bg-secondary text-light border-secondary" 
+                                                           id="fl-batch-size" value="32" min="1" max="1024">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="fl-epochs" class="form-label">Epochs per Round</label>
+                                                    <input type="number" class="form-control bg-secondary text-light border-secondary" 
+                                                           id="fl-epochs" value="3" min="1" max="20">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="fl-privacy" class="form-label">Privacy Budget (ε)</label>
+                                                    <input type="number" step="0.1" class="form-control bg-secondary text-light border-secondary" 
+                                                           id="fl-privacy" value="1.0" min="0.1" max="10">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" class="btn btn-secondary" onclick="previewFederatedConfig()">
+                                            <i class="fas fa-eye me-1"></i>
+                                            Preview Configuration
+                                        </button>
+                                        <div>
+                                            <button type="button" class="btn btn-outline-primary me-2" onclick="downloadModelWeights()">
+                                                <i class="fas fa-download me-1"></i>
+                                                Download Current Weights
+                                            </button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-play me-1"></i>
+                                                Start Training
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Federated Training Progress -->
+                        <div class="card bg-dark text-light" id="federated-progress" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-tasks me-2"></i>
+                                    Federated Training Progress
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Training Progress</span>
+                                        <span id="fl-progress-percentage">0%</span>
+                                    </div>
+                                    <div class="progress bg-secondary">
+                                        <div class="progress-bar bg-success" id="fl-progress-bar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="card bg-secondary text-light mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Current Round</h6>
+                                                <div class="display-4 text-center" id="fl-current-round">0</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card bg-secondary text-light mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Model Accuracy</h6>
+                                                <div class="display-4 text-center" id="fl-model-accuracy">0%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="deployment-log bg-secondary p-3 rounded" style="height: 200px; overflow-y: auto;">
+                                    <div id="federated-log-content">
+                                        <div class="text-muted">Federated training log will appear here...</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 d-flex justify-content-between">
+                                    <div>
+                                        <span class="badge bg-success me-2">
+                                            <span id="active-agents">0</span> Active
+                                        </span>
+                                        <span class="badge bg-warning me-2">
+                                            <span id="pending-agents">0</span> Training
+                                        </span>
+                                        <span class="badge bg-danger">
+                                            <span id="failed-agents">0</span> Failed
+                                        </span>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" id="cancel-federated" style="display: none;" onclick="cancelFederatedTraining()">
+                                        <i class="fas fa-times me-1"></i>
+                                        Stop Training
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Federated Learning Guide -->
+                    <div class="col-lg-4">
+                        <div class="card bg-dark text-light mb-4">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Federated Learning Overview
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info" role="alert">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Federated Learning</strong> trains models across decentralized devices while keeping data localized.
+                                </div>
+                                
+                                <h6 class="mt-3">How It Works</h6>
+                                <ol class="small">
+                                    <li>Global model is sent to agents</li>
+                                    <li>Agents train locally on their data</li>
+                                    <li>Only model updates are sent back</li>
+                                    <li>Updates are aggregated securely</li>
+                                    <li>Improved global model is distributed</li>
+                                </ol>
+                                
+                                <hr class="border-secondary">
+                                
+                                <h6 class="mt-3">Privacy Features</h6>
+                                <ul class="small">
+                                    <li>Differential privacy noise injection</li>
+                                    <li>Secure multi-party aggregation</li>
+                                    <li>Local data never leaves devices</li>
+                                    <li>Encrypted model updates</li>
+                                    <li>Privacy budget tracking</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-dark text-light mb-4">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    Model Performance
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="fl-performance-chart" height="200"></canvas>
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">Model accuracy over training rounds</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-dark text-light">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    Privacy Metrics
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Privacy Budget</span>
+                                        <span id="privacy-budget">1.0 ε</span>
+                                    </div>
+                                    <div class="progress bg-secondary">
+                                        <div class="progress-bar bg-info" id="privacy-budget-bar" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Data Exposure Risk</span>
+                                        <span id="exposure-risk">Low</span>
+                                    </div>
+                                    <div class="progress bg-secondary">
+                                        <div class="progress-bar bg-success" id="exposure-risk-bar" style="width: 25%"></div>
+                                    </div>
+                                </div>
+                                
+                                <ul class="small mb-0">
+                                    <li>Current ε: 1.0 (moderate privacy)</li>
+                                    <li>Recommended max: 5.0 per model</li>
+                                    <li>Lower ε = stronger privacy</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Management Tab -->
+            <div class="tab-pane fade" id="management" role="tabpanel" aria-labelledby="management-tab">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card bg-dark text-light mb-4">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">
+                                    <i class="fas fa-cog me-2"></i>
+                                    Agent Management
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" id="select-all-agents"></th>
+                                                <th>Agent</th>
+                                                <th>Platform</th>
+                                                <th>Status</th>
+                                                <th>Last Seen</th>
+                                                <th>Version</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><input type="checkbox" class="agent-checkbox"></td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="status-indicator status-online me-2"></div>
+                                                        <div>
+                                                            <strong>WIN-AGENT-01</strong>
+                                                            <br>
+                                                            <small class="text-muted">192.168.1.100</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="badge bg-secondary">Windows</span></td>
+                                                <td><span class="badge bg-success">Online</span></td>
+                                                <td>2 minutes ago</td>
+                                                <td>1.0.0</td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button class="btn btn-outline-primary" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-success" title="Send Command">
+                                                            <i class="fas fa-terminal"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" title="Remove">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><input type="checkbox" class="agent-checkbox"></td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="status-indicator status-online me-2"></div>
+                                                        <div>
+                                                            <strong>LINUX-AGENT-01</strong>
+                                                            <br>
+                                                            <small class="text-muted">192.168.1.101</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="badge bg-secondary">Linux</span></td>
+                                                <td><span class="badge bg-success">Online</span></td>
+                                                <td>5 minutes ago</td>
+                                                <td>1.0.0</td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button class="btn btn-outline-primary" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-success" title="Send Command">
+                                                            <i class="fas fa-terminal"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" title="Remove">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><input type="checkbox" class="agent-checkbox"></td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="status-indicator status-offline me-2"></div>
+                                                        <div>
+                                                            <strong>MAC-AGENT-01</strong>
+                                                            <br>
+                                                            <small class="text-muted">192.168.1.102</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="badge bg-secondary">macOS</span></td>
+                                                <td><span class="badge bg-warning">Offline</span></td>
+                                                <td>1 hour ago</td>
+                                                <td>0.9.5</td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button class="btn btn-outline-primary" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-secondary" disabled title="Send Command">
+                                                            <i class="fas fa-terminal"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" title="Remove">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-3">
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline-secondary" disabled>
+                                            <i class="fas fa-sync-alt me-1"></i>
+                                            Refresh
+                                        </button>
+                                        <button class="btn btn-outline-secondary">
+                                            <i class="fas fa-filter me-1"></i>
+                                            Filter
+                                        </button>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline-danger">
+                                            <i class="fas fa-trash me-1"></i>
+                                            Remove Selected
+                                        </button>
+                                        <button class="btn btn-outline-primary">
+                                            <i class="fas fa-download me-1"></i>
+                                            Export
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div class="modal fade" id="previewModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-light">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title">
+                            <i class="fas fa-eye me-2"></i>
+                            Deployment Configuration Preview
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="preview-content">
+                        <!-- Preview content will be populated here -->
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="proceedWithDeployment()">
+                            <i class="fas fa-play me-1"></i>
+                            Proceed with Deployment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Federated Preview Modal -->
+        <div class="modal fade" id="federatedPreviewModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-light">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title">
+                            <i class="fas fa-share-alt me-2"></i>
+                            Federated Learning Configuration Preview
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="federated-preview-content">
+                        <!-- Preview content will be populated here -->
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="proceedWithFederatedTraining()">
+                            <i class="fas fa-play me-1"></i>
+                            Start Training
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-light py-4 mt-auto">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0">
+                        &copy; 2024 ForensIQ Enterprise. All rights reserved.
+                        <span class="ms-2">
+                            <i class="fas fa-shield-alt text-success me-1"></i>
+                            Secure & Compliant
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="me-3">
+                        <i class="fas fa-clock me-1"></i>
+                        <span id="current-time"></span>
+                    </span>
+                    <span class="live-indicator">
+                        <i class="fas fa-circle me-1"></i>LIVE
+                    </span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Load custom forensics framework -->
+    <script>
+        // Initialize ForensIQ Framework
+        window.forensiq = {
+            charts: new Map(),
+            realtime: null,
+
+            init: function() {
+                this.updateTime();
+                setInterval(() => this.updateTime(), 1000);
+                this.initNotifications();
+                this.initSidebarToggle();
+                
+                // Show/hide credential fields based on deployment method
+                document.getElementById('deployment-method').addEventListener('change', function() {
+                    const credentialsDiv = document.getElementById('deployment-credentials');
+                    if (this.value === 'remote') {
+                        credentialsDiv.style.display = 'block';
+                    } else {
+                        credentialsDiv.style.display = 'none';
+                    }
+                });
+
+                // Handle form submission
+                document.getElementById('deployment-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    startDeployment();
+                });
+
+                // Handle federated form submission
+                document.getElementById('federated-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    startFederatedTraining();
+                });
+
+                // Initialize federated learning chart
+                this.initFederatedChart();
+            },
+
+            updateTime: function() {
+                const timeElement = document.getElementById('current-time');
+                if (timeElement) {
+                    timeElement.textContent = new Date().toLocaleTimeString();
+                }
+            },
+
+            showNotification: function(type, message, duration = 5000) {
+                const container = document.getElementById('notification-container');
+                if (!container) return;
+
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible fade show notification-slide-in`;
+                notification.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+
+                container.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, duration);
+            },
+
+            initNotifications: function() {
+                // Initialize notification system
+                console.log('ForensIQ notification system initialized');
+            },
+            
+            initSidebarToggle: function() {
+                const sidebar = document.getElementById('sidebar');
+                const sidebarToggle = document.getElementById('sidebarToggle');
+                const mainContent = document.querySelector('.main-content');
+                const topNavbar = document.querySelector('.top-navbar');
+                
+                if (sidebar && sidebarToggle) {
+                    sidebarToggle.addEventListener('click', function() {
+                        sidebar.classList.toggle('sidebar-collapsed');
+                        mainContent.classList.toggle('content-expanded');
+                        topNavbar.classList.toggle('top-navbar-expanded');
+                    });
+                }
+                
+                // Responsive behavior
+                function handleResize() {
+                    if (window.innerWidth < 992) {
+                        sidebar.classList.add('sidebar-collapsed');
+                        mainContent.classList.add('content-expanded');
+                        topNavbar.classList.add('top-navbar-expanded');
+                    } else {
+                        sidebar.classList.remove('sidebar-collapsed');
+                        mainContent.classList.remove('content-expanded');
+                        topNavbar.classList.remove('top-navbar-expanded');
+                    }
+                }
+                
+                window.addEventListener('resize', handleResize);
+                handleResize();
+            },
+
+            initFederatedChart: function() {
+                const ctx = document.getElementById('fl-performance-chart').getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5'],
+                        datasets: [{
+                            label: 'Model Accuracy',
+                            data: [0.65, 0.72, 0.78, 0.82, 0.85],
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 1.0,
+                                ticks: {
+                                    callback: function(value) {
+                                        return (value * 100) + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                this.charts.set('fl-performance', chart);
+            }
+        };
+
+        // Deployment functions
+        function startDeployment() {
+            // Validate form
+            const platform = document.getElementById('platform').value;
+            const targetIPs = document.getElementById('target-ips').value.trim();
+            
+            if (!platform || !targetIPs) {
+                showAlert('Please select a platform and provide target IP addresses', 'danger');
+                return;
+            }
+            
+            // Parse IP addresses
+            const ips = targetIPs.split('\n').map(ip => ip.trim()).filter(ip => ip);
+            
+            if (ips.length === 0) {
+                showAlert('Please provide at least one valid IP address', 'danger');
+                return;
+            }
+            
+            // Show progress section
+            document.getElementById('deployment-progress').style.display = 'block';
+            document.getElementById('cancel-deployment').style.display = 'inline-block';
+            
+            // Prepare deployment data
+            const deploymentData = {
+                platform: platform,
+                target_ips: ips,
+                method: document.getElementById('deployment-method').value,
+                version: document.getElementById('agent-version').value,
+                capabilities: getSelectedCapabilities()
+            };
+            
+            // Start deployment
+            deployAgents(deploymentData);
+        }
+
+        function getSelectedCapabilities() {
+            const capabilities = {};
+            capabilities.memory_capture = document.getElementById('memory-capture').checked;
+            capabilities.file_hashing = document.getElementById('file-hashing').checked;
+            capabilities.network_monitoring = document.getElementById('network-monitoring').checked;
+            capabilities.process_analysis = document.getElementById('process-analysis').checked;
+            capabilities.system_info = document.getElementById('system-info').checked;
+            capabilities.federated_learning = document.getElementById('federated-learning').checked;
+            return capabilities;
+        }
+
+        function deployAgents(data) {
+            // Simulate API call
+            setTimeout(() => {
+                const success = Math.random() > 0.1; // 90% success rate for simulation
+                
+                if (success) {
+                    // Simulate deployment progress
+                    const ips = data.target_ips;
+                    const total = ips.length;
+                    let successful = 0;
+                    let failed = 0;
+                    
+                    const logContent = document.getElementById('deployment-log-content');
+                    logContent.innerHTML = '';
+                    
+                    ips.forEach((ip, index) => {
+                        setTimeout(() => {
+                            const agentSuccess = Math.random() > 0.2; // 80% success rate per agent
+                            
+                            if (agentSuccess) {
+                                successful++;
+                                logContent.innerHTML += `<div class="text-success">[${new Date().toLocaleTimeString()}] ✓ Agent deployed to ${ip} (agent_${Math.floor(Math.random() * 10000)})</div>`;
+                            } else {
+                                failed++;
+                                logContent.innerHTML += `<div class="text-danger">[${new Date().toLocaleTimeString()}] ✗ Failed to deploy to ${ip}: Connection timeout</div>`;
+                            }
+                            
+                            // Update counters
+                            document.getElementById('successful-deployments').textContent = successful;
+                            document.getElementById('failed-deployments').textContent = failed;
+                            document.getElementById('pending-deployments').textContent = total - successful - failed;
+                            
+                            // Update progress bar
+                            const progress = Math.round(((successful + failed) / total) * 100);
+                            document.getElementById('progress-bar').style.width = progress + '%';
+                            document.getElementById('progress-percentage').textContent = progress + '%';
+                            
+                            // Scroll to bottom of log
+                            logContent.scrollTop = logContent.scrollHeight;
+                            
+                            // Hide cancel button when done
+                            if (successful + failed === total) {
+                                document.getElementById('cancel-deployment').style.display = 'none';
+                                logContent.innerHTML += `<div class="text-info mt-2">[${new Date().toLocaleTimeString()}] Deployment completed: ${successful} successful, ${failed} failed</div>`;
+                            }
+                        }, index * 2000); // Deploy with 2-second intervals
+                    });
+                    
+                    showAlert('Deployment started successfully', 'success');
+                } else {
+                    showAlert('Deployment failed to initiate', 'danger');
+                }
+            }, 1000);
+        }
+
+        function previewDeployment() {
+            const platform = document.getElementById('platform').value;
+            const targetIPs = document.getElementById('target-ips').value.trim();
+            const method = document.getElementById('deployment-method').value;
+            
+            if (!platform) {
+                showAlert('Please select a platform first', 'warning');
+                return;
+            }
+            
+            const ips = targetIPs.split('\n').map(ip => ip.trim()).filter(ip => ip);
+            const capabilities = getSelectedCapabilities();
+            
+            const previewContent = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Deployment Details</h6>
+                        <table class="table table-sm table-dark">
+                            <tr><td>Platform:</td><td><span class="badge bg-secondary">${platform}</span></td></tr>
+                            <tr><td>Method:</td><td>${method}</td></tr>
+                            <tr><td>Targets:</td><td>${ips.length} endpoints</td></tr>
+                            <tr><td>Version:</td><td>${document.getElementById('agent-version').value}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Capabilities</h6>
+                        <div class="small">
+                            ${Object.entries(capabilities).map(([key, value]) => 
+                                `<div class="form-check"><input type="checkbox" class="form-check-input" ${value ? 'checked' : ''} disabled><label class="form-check-label">${key.replace('_', ' ')}</label></div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Target Endpoints</h6>
+                        <div class="bg-secondary p-2 rounded small">
+                            ${ips.map(ip => `<div>• ${ip}</div>`).join('') || '<div class="text-muted">No IP addresses specified</div>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('preview-content').innerHTML = previewContent;
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        }
+
+        function proceedWithDeployment() {
+            // Close modal and start deployment
+            bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();
+            startDeployment();
+        }
+
+        function generateInstaller() {
+            const platform = document.getElementById('platform').value;
+            if (!platform) {
+                showAlert('Please select a platform first', 'warning');
+                return;
+            }
+            
+            // Simulate installer generation
+            showAlert(`Generating ${platform} installer package...`, 'info');
+            
+            setTimeout(() => {
+                showAlert(`${platform} installer package ready!`, 'success');
+            }, 2000);
+        }
+
+        function downloadAllBinaries() {
+            showAlert('Preparing binary packages...', 'info');
+            
+            setTimeout(() => {
+                showAlert('All binary packages are ready for download!', 'success');
+            }, 1500);
+        }
+
+        function cancelDeployment() {
+            if (confirm('Are you sure you want to cancel the ongoing deployment?')) {
+                document.getElementById('cancel-deployment').style.display = 'none';
+                const logContent = document.getElementById('deployment-log-content');
+                logContent.innerHTML += `<div class="text-warning mt-2">[${new Date().toLocaleTimeString()}] Deployment cancelled by user</div>`;
+                showAlert('Deployment cancelled', 'warning');
+            }
+        }
+
+        // Federated Learning Functions
+        function previewFederatedConfig() {
+            const model = document.getElementById('fl-model').value;
+            const rounds = document.getElementById('fl-rounds').value;
+            const agents = Array.from(document.getElementById('fl-agents').selectedOptions).map(opt => opt.value);
+            
+            if (!model) {
+                showAlert('Please select a model first', 'warning');
+                return;
+            }
+            
+            const previewContent = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Training Configuration</h6>
+                        <table class="table table-sm table-dark">
+                            <tr><td>Model:</td><td>${model}</td></tr>
+                            <tr><td>Training Rounds:</td><td>${rounds}</td></tr>
+                            <tr><td>Learning Rate:</td><td>${document.getElementById('fl-learning-rate').value}</td></tr>
+                            <tr><td>Batch Size:</td><td>${document.getElementById('fl-batch-size').value}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Privacy Parameters</h6>
+                        <table class="table table-sm table-dark">
+                            <tr><td>Epochs per Round:</td><td>${document.getElementById('fl-epochs').value}</td></tr>
+                            <tr><td>Privacy Budget (ε):</td><td>${document.getElementById('fl-privacy').value}</td></tr>
+                            <tr><td>Participating Agents:</td><td>${agents.join(', ') || 'All eligible agents'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Federated learning will train the model across decentralized agents without collecting raw data.
+                </div>
+            `;
+            
+            document.getElementById('federated-preview-content').innerHTML = previewContent;
+            new bootstrap.Modal(document.getElementById('federatedPreviewModal')).show();
+        }
+
+        function proceedWithFederatedTraining() {
+            // Close modal and start training
+            bootstrap.Modal.getInstance(document.getElementById('federatedPreviewModal')).hide();
+            startFederatedTraining();
+        }
+
+        function startFederatedTraining() {
+            // Show progress section
+            document.getElementById('federated-progress').style.display = 'block';
+            document.getElementById('cancel-federated').style.display = 'inline-block';
+            
+            // Get configuration
+            const config = {
+                model: document.getElementById('fl-model').value,
+                rounds: parseInt(document.getElementById('fl-rounds').value),
+                learning_rate: parseFloat(document.getElementById('fl-learning-rate').value),
+                batch_size: parseInt(document.getElementById('fl-batch-size').value),
+                epochs: parseInt(document.getElementById('fl-epochs').value),
+                privacy: parseFloat(document.getElementById('fl-privacy').value),
+                agents: Array.from(document.getElementById('fl-agents').selectedOptions).map(opt => opt.value)
+            };
+            
+            // Simulate federated training
+            simulateFederatedTraining(config);
+        }
+
+        function simulateFederatedTraining(config) {
+            const logContent = document.getElementById('federated-log-content');
+            logContent.innerHTML = '';
+            
+            let currentRound = 0;
+            let activeAgents = 0;
+            let failedAgents = 0;
+            
+            // Simulate agent participation
+            const totalAgents = Math.floor(Math.random() * 10) + 5; // 5-14 agents
+            document.getElementById('active-agents').textContent = totalAgents;
+            
+            const trainingInterval = setInterval(() => {
+                if (currentRound >= config.rounds) {
+                    clearInterval(trainingInterval);
+                    document.getElementById('cancel-federated').style.display = 'none';
+                    logContent.innerHTML += `<div class="text-success mt-2">[${new Date().toLocaleTimeString()}] Training completed successfully!</div>`;
+                    showAlert('Federated training completed', 'success');
+                    return;
+                }
+                
+                currentRound++;
+                document.getElementById('fl-current-round').textContent = currentRound;
+                
+                // Update progress
+                const progress = Math.round((currentRound / config.rounds) * 100);
+                document.getElementById('fl-progress-bar').style.width = progress + '%';
+                document.getElementById('fl-progress-percentage').textContent = progress + '%';
+                
+                // Simulate agent participation in this round
+                activeAgents = Math.floor(Math.random() * totalAgents) + 1;
+                failedAgents = Math.floor(Math.random() * 2);
+                
+                document.getElementById('active-agents').textContent = activeAgents;
+                document.getElementById('pending-agents').textContent = totalAgents - activeAgents - failedAgents;
+                document.getElementById('failed-agents').textContent = failedAgents;
+                
+                // Simulate accuracy improvement
+                const baseAccuracy = 0.65;
+                const improvement = (currentRound * 0.05) + (Math.random() * 0.03);
+                const accuracy = Math.min(0.95, baseAccuracy + improvement);
+                document.getElementById('fl-model-accuracy').textContent = (accuracy * 100).toFixed(1) + '%';
+                
+                // Update chart
+                const chart = window.forensiq.charts.get('fl-performance');
+                if (chart) {
+                    chart.data.labels.push(`Round ${currentRound}`);
+                    chart.data.datasets[0].data.push(accuracy);
+                    if (chart.data.labels.length > 10) {
+                        chart.data.labels.shift();
+                        chart.data.datasets[0].data.shift();
+                    }
+                    chart.update();
+                }
+                
+                // Add log entry
+                logContent.innerHTML += `
+                    <div class="text-info">[${new Date().toLocaleTimeString()}] Round ${currentRound} started with ${activeAgents} active agents</div>
+                    <div class="text-muted small ms-3">• Aggregating updates from ${activeAgents} devices</div>
+                    <div class="text-muted small ms-3">• Applying differential privacy (ε=${config.privacy})</div>
+                `;
+                
+                // Scroll to bottom
+                logContent.scrollTop = logContent.scrollHeight;
+                
+            }, 3000); // Simulate round every 3 seconds
+        }
+
+        function cancelFederatedTraining() {
+            if (confirm('Are you sure you want to stop the federated training?')) {
+                document.getElementById('cancel-federated').style.display = 'none';
+                const logContent = document.getElementById('federated-log-content');
+                logContent.innerHTML += `<div class="text-warning mt-2">[${new Date().toLocaleTimeString()}] Training stopped by user</div>`;
+                showAlert('Federated training stopped', 'warning');
+            }
+        }
+
+        function downloadModelWeights() {
+            showAlert('Preparing model weights for download...', 'info');
+            
+            setTimeout(() => {
+                showAlert('Model weights ready for download!', 'success');
+            }, 1500);
+        }
+
+        function showAlert(message, type) {
+            // Create and show bootstrap alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert at top of main content
+            const main = document.querySelector('main');
+            main.insertBefore(alertDiv, main.firstChild);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            window.forensiq.init();
+        });
+    </script>
+</body>
+</html>

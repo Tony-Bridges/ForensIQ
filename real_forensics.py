@@ -187,7 +187,7 @@ class VolatilityIntegration:
     
     def _detect_profile(self, dump_path):
         """Detect memory dump profile/OS version."""
-        # Simplified profile detection
+        #profile detection
         profiles = [
             "Win10x64_19041",
             "Win10x64_18362", 

@@ -444,6 +444,17 @@ body {
     font-size: 1.1rem;
 }
 
+.card-body canvas {
+    width: 100% !important;
+    height: 300px !important;
+    display: block;
+}
+
+.card-body {
+    overflow: hidden;
+}
+
+
 /* Finding Items */
 .finding-item {
     transition: all 0.3s ease;
@@ -477,6 +488,7 @@ body {
     border-top: 1px solid var(--border-color);
     background: var(--card-bg) !important;
 }
+
 
 /* Timeline Styles */
 .timeline-container {

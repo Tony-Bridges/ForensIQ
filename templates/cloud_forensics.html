@@ -8,77 +8,102 @@
                 <h5><i data-feather="cloud"></i> Cloud & Container Forensics</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="analysis_type" class="form-label">Analysis Type</label>
                         <select class="form-select" id="analysis_type" name="analysis_type" required>
                             <option value="">Select analysis type...</option>
-                            <option value="cloud_acquisition">Cloud Data Acquisition</option>
-                            <option value="container_analysis">Container Analysis</option>
-                            <option value="serverless_trace">Serverless Tracing</option>
-                            <option value="vm_analysis">VM Disk Analysis</option>
+                            <option value="cloud_acquisition" {% if analysis_type == 'cloud_acquisition' %}selected{% endif %}>Cloud Data Acquisition</option>
+                            <option value="container_analysis" {% if analysis_type == 'container_analysis' %}selected{% endif %}>Container Analysis</option>
+                            <option value="serverless_trace" {% if analysis_type == 'serverless_trace' %}selected{% endif %}>Serverless Tracing</option>
+                            <option value="vm_analysis" {% if analysis_type == 'vm_analysis' %}selected{% endif %}>VM Disk Analysis</option>
                         </select>
                     </div>
                     
+                    <!-- Cloud Configuration -->
                     <div id="cloud-config" class="mb-3" style="display: none;">
                         <label for="cloud_provider" class="form-label">Cloud Provider</label>
                         <select class="form-select" id="cloud_provider" name="cloud_provider">
-                            <option value="aws">Amazon Web Services</option>
-                            <option value="azure">Microsoft Azure</option>
-                            <option value="gcp">Google Cloud Platform</option>
-                            <option value="onedrive">OneDrive</option>
-                            <option value="dropbox">Dropbox</option>
+                            <option value="aws" {% if request.form.get('cloud_provider') == 'aws' %}selected{% endif %}>Amazon Web Services</option>
+                            <option value="azure" {% if request.form.get('cloud_provider') == 'azure' %}selected{% endif %}>Microsoft Azure</option>
+                            <option value="gcp" {% if request.form.get('cloud_provider') == 'gcp' %}selected{% endif %}>Google Cloud Platform</option>
                         </select>
                         
                         <label for="resource_types" class="form-label mt-2">Resource Types</label>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="logs" id="logs" name="resource_types" checked>
+                            <input class="form-check-input" type="checkbox" value="logs" id="logs" name="resource_types" 
+                                   {% if 'logs' in request.form.getlist('resource_types') or not results %}checked{% endif %}>
                             <label class="form-check-label" for="logs">Logs (CloudTrail, Activity Logs)</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="storage" id="storage" name="resource_types" checked>
+                            <input class="form-check-input" type="checkbox" value="storage" id="storage" name="resource_types" 
+                                   {% if 'storage' in request.form.getlist('resource_types') or not results %}checked{% endif %}>
                             <label class="form-check-label" for="storage">Storage (S3, Blob Storage)</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="iam" id="iam" name="resource_types" checked>
+                            <input class="form-check-input" type="checkbox" value="iam" id="iam" name="resource_types" 
+                                   {% if 'iam' in request.form.getlist('resource_types') or not results %}checked{% endif %}>
                             <label class="form-check-label" for="iam">IAM (Users, Roles, Policies)</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="compute" id="compute" name="resource_types">
+                            <input class="form-check-input" type="checkbox" value="compute" id="compute" name="resource_types" 
+                                   {% if 'compute' in request.form.getlist('resource_types') %}checked{% endif %}>
                             <label class="form-check-label" for="compute">Compute (Instances, VMs)</label>
                         </div>
                     </div>
                     
+                    <!-- Container Configuration -->
                     <div id="container-config" class="mb-3" style="display: none;">
                         <label for="container_runtime" class="form-label">Container Runtime</label>
                         <select class="form-select" id="container_runtime" name="container_runtime">
-                            <option value="docker">Docker</option>
-                            <option value="kubernetes">Kubernetes</option>
-                            <option value="containerd">containerd</option>
+                            <option value="docker" {% if request.form.get('container_runtime') == 'docker' %}selected{% endif %}>Docker</option>
+                            <option value="kubernetes" {% if request.form.get('container_runtime') == 'kubernetes' %}selected{% endif %}>Kubernetes</option>
                         </select>
+                        
+                        <div id="k8s-config" style="display: none;" class="mt-2">
+                            <label for="namespace" class="form-label">Namespace</label>
+                            <input type="text" class="form-control" id="namespace" name="namespace" 
+                                   value="{{ request.form.get('namespace', 'default') }}" placeholder="default">
+                            <label for="kubeconfig_path" class="form-label mt-2">Kubeconfig Path</label>
+                            <input type="text" class="form-control" id="kubeconfig_path" name="kubeconfig_path" 
+                                   value="{{ request.form.get('kubeconfig_path', '~/.kube/config') }}" placeholder="~/.kube/config">
+                        </div>
                     </div>
                     
+                    <!-- Serverless Configuration -->
                     <div id="serverless-config" class="mb-3" style="display: none;">
                         <label for="function_names" class="form-label">Function Names (comma-separated)</label>
                         <input type="text" class="form-control" id="function_names" name="function_names" 
-                               placeholder="function1,function2,function3">
+                               value="{{ request.form.get('function_names', '') }}" placeholder="function1,function2,function3">
                     </div>
                     
+                    <!-- VM Configuration -->
                     <div id="vm-config" class="mb-3" style="display: none;">
                         <label for="vm_format" class="form-label">VM Format</label>
                         <select class="form-select" id="vm_format" name="vm_format">
-                            <option value="vmware">VMware (VMDK)</option>
-                            <option value="hyper-v">Hyper-V (VHDX)</option>
-                            <option value="virtualbox">VirtualBox (VDI)</option>
-                            <option value="citrix">Citrix XenServer</option>
+                            <option value="vmware" {% if request.form.get('vm_format') == 'vmware' %}selected{% endif %}>VMware (VMDK)</option>
+                            <option value="hyper-v" {% if request.form.get('vm_format') == 'hyper-v' %}selected{% endif %}>Hyper-V (VHDX)</option>
+                            <option value="virtualbox" {% if request.form.get('vm_format') == 'virtualbox' %}selected{% endif %}>VirtualBox (VDI)</option>
                         </select>
                         
-                        <label for="disk_path" class="form-label mt-2">Disk Path</label>
-                        <input type="text" class="form-control" id="disk_path" name="disk_path" 
-                               placeholder="/path/to/vm/disk.vmdk">
+                        <div class="mt-3">
+                            <label class="form-label">Disk Source</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="disk_source" id="disk_path_radio" value="path" checked>
+                                <label class="form-check-label" for="disk_path_radio">Path to Disk</label>
+                            </div>
+                            <input type="text" class="form-control mt-2" id="disk_path" name="disk_path" 
+                                   value="{{ request.form.get('disk_path', '') }}" placeholder="/path/to/vm/disk.vmdk">
+                            
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="radio" name="disk_source" id="disk_upload_radio" value="upload">
+                                <label class="form-check-label" for="disk_upload_radio">Upload Disk Image</label>
+                            </div>
+                            <input type="file" class="form-control mt-2" id="disk_file" name="disk_file" accept=".vmdk,.vhdx,.vdi">
+                        </div>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary mt-3">
                         <i data-feather="play"></i> Start Analysis
                     </button>
                 </form>
@@ -89,8 +114,13 @@
     <div class="col-md-8">
         {% if results %}
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i data-feather="search"></i> Analysis Results - {{ analysis_type.replace('_', ' ').title() }}</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleRawData()">
+                        <i data-feather="code"></i> Toggle Raw Data
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% if results.error %}
@@ -99,117 +129,470 @@
                 </div>
                 {% else %}
                 
+                <!-- Cloud Acquisition Results -->
                 {% if analysis_type == 'cloud_acquisition' %}
                 <div class="row">
-                    <div class="col-md-6">
-                        <h6>Acquisition Summary</h6>
-                        <p><strong>Provider:</strong> {{ results.provider.upper() }}</p>
-                        <p><strong>Timestamp:</strong> {{ results.timestamp }}</p>
-                        <p><strong>Resources Acquired:</strong> {{ results.resources.keys() | list | length }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Resource Types</h6>
-                        <ul class="list-group">
-                            {% for resource_type in results.resources.keys() %}
-                            <li class="list-group-item">
-                                <i data-feather="check-circle" class="text-success"></i> {{ resource_type.replace('_', ' ').title() }}
-                            </li>
+                    <div class="col-md-12">
+                        <h6>Resource Summary</h6>
+                        {% if visualization %}
+                        <div class="chart-container mb-4" style="position: relative; height:300px;">
+                            <canvas id="resourceChart"></canvas>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            {% for resource_type, data in results.resources.items() %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>{{ resource_type.replace('_', ' ').title() }}</h6>
+                                        <span class="badge bg-primary">{{ data|length if data is iterable and not data is string else 1 }} items</span>
+                                    </div>
+                                    <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                        {% if data is iterable and not data is string %}
+                                            {% for item in data[:5] %}
+                                                <div class="mb-2 small">
+                                                    {% if item is mapping %}
+                                                        <strong>{{ item.get('name', item.get('id', 'Item')) }}</strong>
+                                                        <div class="text-muted">
+                                                            {% for k, v in item.items() %}
+                                                                {% if k not in ['name', 'id'] and loop.index <= 3 %}
+                                                                    {{ k }}: {{ v }}{% if not loop.last %}, {% endif %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% else %}
+                                                        {{ item }}
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                            {% if data|length > 5 %}
+                                                <div class="text-center text-muted">
+                                                    + {{ data|length - 5 }} more items
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <pre class="mb-0">{{ data|tojson(indent=2) }}</pre>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
                             {% endfor %}
-                        </ul>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
                 
+                <!-- Container Analysis Results -->
                 {% if analysis_type == 'container_analysis' %}
                 <div class="row">
-                    <div class="col-md-6">
-                        <h6>Containers</h6>
-                        {% if results.containers %}
-                        {% for container in results.containers %}
-                        <div class="card mb-2">
-                            <div class="card-body">
-                                <h6 class="card-title">{{ container.name or container.id }}</h6>
-                                <p class="card-text small">
-                                    <strong>Image:</strong> {{ container.image }}<br>
-                                    <strong>Status:</strong> {{ container.status }}
-                                </p>
+                    <div class="col-md-12">
+                        {% if visualization %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6>Pod Status</h6>
+                                <div class="chart-container" style="position: relative; height:250px;">
+                                    <canvas id="podStatusChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Container Images</h6>
+                                <div class="chart-container" style="position: relative; height:250px;">
+                                    <canvas id="containerImageChart"></canvas>
+                                </div>
                             </div>
                         </div>
-                        {% endfor %}
-                        {% else %}
-                        <p class="text-muted">No containers found</p>
                         {% endif %}
+                        
+                        <h6>Detailed Analysis</h6>
+                        <ul class="nav nav-tabs" id="containerTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="pods-tab" data-bs-toggle="tab" data-bs-target="#pods" type="button" role="tab">Pods</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="containers-tab" data-bs-toggle="tab" data-bs-target="#containers" type="button" role="tab">Containers</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">Security Findings</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content p-3 border border-top-0 rounded-bottom">
+                            <div class="tab-pane fade show active" id="pods" role="tabpanel">
+                                {% if results.pods %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Namespace</th>
+                                                <th>Status</th>
+                                                <th>Node</th>
+                                                <th>Containers</th>
+                                                <th>Created</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for pod in results.pods %}
+                                            <tr>
+                                                <td>{{ pod.name }}</td>
+                                                <td>{{ pod.namespace }}</td>
+                                                <td><span class="badge bg-{{ 'success' if pod.status == 'Running' else 'warning' }}">{{ pod.status }}</span></td>
+                                                <td>{{ pod.node }}</td>
+                                                <td>{{ pod.containers|join(', ') }}</td>
+                                                <td>{{ pod.creation_timestamp }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No pods found</p>
+                                {% endif %}
+                            </div>
+                            <div class="tab-pane fade" id="containers" role="tabpanel">
+                                {% if results.containers %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Image</th>
+                                                <th>Ports</th>
+                                                <th>Security Context</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for container in results.containers %}
+                                            <tr>
+                                                <td>{{ container.name }}</td>
+                                                <td>{{ container.image }}</td>
+                                                <td>
+                                                    {% if container.ports %}
+                                                        {% for port in container.ports %}
+                                                            {{ port.port }}/{{ port.protocol }}{% if not loop.last %}, {% endif %}
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        None
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ container.security_context|truncate(50) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No containers found</p>
+                                {% endif %}
+                            </div>
+                            <div class="tab-pane fade" id="security" role="tabpanel">
+                                {% if results.security_issues %}
+                                <div class="list-group">
+                                    {% for issue in results.security_issues %}
+                                    <div class="list-group-item list-group-item-{{ 'danger' if issue.severity == 'high' else 'warning' }}">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ issue.title }}</h6>
+                                            <small class="text-{{ 'danger' if issue.severity == 'high' else 'warning' }}">{{ issue.severity|upper }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ issue.description }}</p>
+                                        <small>Affected: {{ issue.affected_resource }}</small>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="alert alert-success">
+                                    <i data-feather="check-circle"></i> No security issues found
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Images & Volumes</h6>
-                        {% if results.images %}
-                        <p><strong>Images:</strong> {{ results.images|length }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- VM Analysis Results -->
+                {% if analysis_type == 'vm_analysis' %}
+                <div class="row">
+                    <div class="col-md-12">
+                        {% if visualization %}
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-5">{{ visualization.disk_size }}</h1>
+                                        <p class="text-muted mb-0">Disk Size</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-5">{{ visualization.partition_count }}</h1>
+                                        <p class="text-muted mb-0">Partitions</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-5">{{ visualization.indicator_count }}</h1>
+                                        <p class="text-muted mb-0">Forensic Indicators</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6>File Systems</h6>
+                                <div class="chart-container" style="position: relative; height:250px;">
+                                    <canvas id="filesystemChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Artifacts</h6>
+                                <div class="chart-container" style="position: relative; height:250px;">
+                                    <canvas id="artifactChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
-                        {% if results.volumes %}
-                        <p><strong>Volumes:</strong> {{ results.volumes|length }}</p>
-                        {% endif %}
-                        {% if results.networks %}
-                        <p><strong>Networks:</strong> {{ results.networks|length }}</p>
+                        
+                        <h6>Detailed Analysis</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>Disk Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4">Format</dt>
+                                            <dd class="col-sm-8">{{ results.disk_info.format }}</dd>
+                                            
+                                            <dt class="col-sm-4">Size</dt>
+                                            <dd class="col-sm-8">{{ results.disk_info.size }}</dd>
+                                            
+                                            <dt class="col-sm-4">SHA256</dt>
+                                            <dd class="col-sm-8 font-monospace small">{{ results.disk_info.sha256 }}</dd>
+                                            
+                                            <dt class="col-sm-4">Analyzed At</dt>
+                                            <dd class="col-sm-8">{{ results.disk_info.analyzed_at }}</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Partitions</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if results.partitions %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Type</th>
+                                                        <th>Size</th>
+                                                        <th>Offset</th>
+                                                        <th>Bootable</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for part in results.partitions %}
+                                                    <tr>
+                                                        <td>{{ part.number }}</td>
+                                                        <td>{{ part.type }}</td>
+                                                        <td>{{ part.size }}</td>
+                                                        <td>{{ part.offset }}</td>
+                                                        <td>{% if part.bootable %}<i data-feather="check" class="text-success"></i>{% else %}<i data-feather="x" class="text-danger"></i>{% endif %}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% else %}
+                                        <p class="text-muted">No partitions found</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>File Systems</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if results.file_systems %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        <th>Label</th>
+                                                        <th>Total</th>
+                                                        <th>Used</th>
+                                                        <th>Files</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for fs in results.file_systems %}
+                                                    <tr>
+                                                        <td>{{ fs.type }}</td>
+                                                        <td>{{ fs.label }}</td>
+                                                        <td>{{ fs.total_space }}</td>
+                                                        <td>{{ fs.used_space }}</td>
+                                                        <td>{{ fs.files_count }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% else %}
+                                        <p class="text-muted">No file systems found</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Forensic Artifacts</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if results.artifacts %}
+                                        <div class="list-group">
+                                            {% for artifact in results.artifacts %}
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">{{ artifact.type.replace('_', ' ').title() }}</h6>
+                                                    <small>{{ artifact.size }}</small>
+                                                </div>
+                                                <p class="mb-1 font-monospace small">{{ artifact.path }}</p>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <p class="text-muted">No artifacts found</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if results.indicators %}
+                        <div class="card mt-3">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i data-feather="alert-triangle"></i> Forensic Indicators</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Description</th>
+                                                <th>Location</th>
+                                                <th>Severity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for indicator in results.indicators %}
+                                            <tr>
+                                                <td>{{ indicator.type }}</td>
+                                                <td>{{ indicator.description }}</td>
+                                                <td>{{ indicator.location }}</td>
+                                                <td><span class="badge bg-{{ 'danger' if indicator.severity == 'high' else 'warning' }}">{{ indicator.severity }}</span></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
                 {% endif %}
                 
-                {% if analysis_type == 'vm_analysis' %}
+                <!-- Serverless Analysis Results -->
+                {% if analysis_type == 'serverless_trace' %}
                 <div class="row">
-                    <div class="col-md-6">
-                        <h6>VM Disk Information</h6>
-                        {% if results.disk_info %}
-                        <p><strong>Format:</strong> {{ results.disk_info.format }}</p>
-                        <p><strong>Size:</strong> {{ results.disk_info.size }}</p>
-                        <p><strong>Checksum:</strong> {{ results.disk_info.checksum }}</p>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6">
-                        <h6>File Systems</h6>
-                        {% if results.file_systems %}
-                        {% for fs in results.file_systems %}
-                        <div class="small mb-2">
-                            <strong>{{ fs.type }}:</strong> {{ fs.total_space }} 
-                            ({{ fs.used_space }} used, {{ fs.files_count }} files)
+                    <div class="col-md-12">
+                        {% if visualization %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6>Function Execution</h6>
+                                <div class="chart-container" style="position: relative; height:250px;">
+                                    <canvas id="functionChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Security Findings</h6>
+                                <div class="chart-container" style="position: relative; height:250px;">
+                                    <canvas id="findingChart"></canvas>
+                                </div>
+                            </div>
                         </div>
-                        {% endfor %}
                         {% endif %}
-                    </div>
-                </div>
-                
-                {% if results.artifacts %}
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h6>Forensic Artifacts</h6>
+                        
+                        <h6>Function Details</h6>
+                        {% if results.functions %}
                         <div class="table-responsive">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>Type</th>
-                                        <th>Path</th>
-                                        <th>Size</th>
+                                        <th>Name</th>
+                                        <th>Runtime</th>
+                                        <th>Last Modified</th>
+                                        <th>Memory</th>
+                                        <th>Timeout</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for artifact in results.artifacts %}
+                                    {% for func in results.functions %}
                                     <tr>
-                                        <td>{{ artifact.type.replace('_', ' ').title() }}</td>
-                                        <td>{{ artifact.path }}</td>
-                                        <td>{{ artifact.size }}</td>
+                                        <td>{{ func.name }}</td>
+                                        <td>{{ func.runtime }}</td>
+                                        <td>{{ func.last_modified }}</td>
+                                        <td>{{ func.memory }} MB</td>
+                                        <td>{{ func.timeout }} sec</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+                        {% else %}
+                        <p class="text-muted">No functions found</p>
+                        {% endif %}
+                        
+                        {% if results.execution_traces %}
+                        <h6 class="mt-4">Execution Traces</h6>
+                        <div class="accordion" id="tracesAccordion">
+                            {% for trace in results.execution_traces %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="traceHeading{{ loop.index }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#traceCollapse{{ loop.index }}">
+                                        {{ trace.function }} - {{ trace.timestamp }}
+                                    </button>
+                                </h2>
+                                <div id="traceCollapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#tracesAccordion">
+                                    <div class="accordion-body">
+                                        <pre>{{ trace.logs|tojson(indent=2) }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
-                {% endif %}
                 
                 {% endif %}
                 
-                <div class="mt-4">
+                <div class="mt-4" id="rawDataSection" style="display: none;">
                     <h6>Raw Data</h6>
                     <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ results | tojson(indent=2) }}</code></pre>
                 </div>
@@ -220,19 +603,27 @@
             <div class="card-body text-center">
                 <i data-feather="cloud" class="text-muted" style="width: 64px; height: 64px;"></i>
                 <p class="text-muted mt-3">Select an analysis type to begin cloud and container forensics investigation.</p>
+                <a href="{{ url_for('cloud_settings') }}" class="btn btn-outline-primary mt-2">
+                    <i data-feather="settings"></i> Configure Cloud Credentials
+                </a>
             </div>
         </div>
         {% endif %}
     </div>
 </div>
 
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+// Show/hide configuration sections based on analysis type
 document.getElementById('analysis_type').addEventListener('change', function() {
     const analysisType = this.value;
     const cloudConfig = document.getElementById('cloud-config');
     const containerConfig = document.getElementById('container-config');
     const serverlessConfig = document.getElementById('serverless-config');
     const vmConfig = document.getElementById('vm-config');
+    const k8sConfig = document.getElementById('k8s-config');
     
     // Hide all config sections
     cloudConfig.style.display = 'none';
@@ -245,12 +636,260 @@ document.getElementById('analysis_type').addEventListener('change', function() {
         cloudConfig.style.display = 'block';
     } else if (analysisType === 'container_analysis') {
         containerConfig.style.display = 'block';
+        // Show k8s config only if kubernetes is selected
+        document.getElementById('container_runtime').addEventListener('change', function() {
+            k8sConfig.style.display = this.value === 'kubernetes' ? 'block' : 'none';
+        });
+        // Trigger change event to set initial state
+        document.getElementById('container_runtime').dispatchEvent(new Event('change'));
     } else if (analysisType === 'serverless_trace') {
         cloudConfig.style.display = 'block';
         serverlessConfig.style.display = 'block';
     } else if (analysisType === 'vm_analysis') {
         vmConfig.style.display = 'block';
+        // Handle disk source selection
+        document.querySelectorAll('input[name="disk_source"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('disk_path').disabled = this.value !== 'path';
+                document.getElementById('disk_file').disabled = this.value !== 'upload';
+            });
+        });
+        // Trigger change event to set initial state
+        document.querySelector('input[name="disk_source"]:checked').dispatchEvent(new Event('change'));
     }
 });
+
+// Trigger initial setup
+if (document.getElementById('analysis_type').value) {
+    document.getElementById('analysis_type').dispatchEvent(new Event('change'));
+}
+
+// Toggle raw data visibility
+function toggleRawData() {
+    const rawDataSection = document.getElementById('rawDataSection');
+    rawDataSection.style.display = rawDataSection.style.display === 'none' ? 'block' : 'none';
+}
+
+// Initialize charts if visualization data exists
+{% if visualization and analysis_type == 'cloud_acquisition' %}
+const resourceCtx = document.getElementById('resourceChart').getContext('2d');
+new Chart(resourceCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ visualization.resource_types|tojson }},
+        datasets: [{
+            label: 'Resource Count',
+            data: {{ visualization.counts|tojson }},
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Acquired Resources by Type'
+            },
+            tooltip: {
+                callbacks: {
+                    afterLabel: function(context) {
+                        const data = {{ visualization.details|tojson }};
+                        const detail = data[context.dataIndex];
+                        return `Sample: ${JSON.stringify(detail.sample, null, 2)}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+{% endif %}
+
+{% if visualization and analysis_type == 'container_analysis' %}
+// Pod Status Chart
+const podStatusCtx = document.getElementById('podStatusChart').getContext('2d');
+new Chart(podStatusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys({{ visualization.pod_statuses|tojson }}),
+        datasets: [{
+            data: Object.values({{ visualization.pod_statuses|tojson }}),
+            backgroundColor: [
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(255, 99, 132, 0.7)'
+            ],
+            borderColor: [
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(255, 99, 132, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Pod Status Distribution'
+            }
+        }
+    }
+});
+
+// Container Image Chart
+const containerImageCtx = document.getElementById('containerImageChart').getContext('2d');
+new Chart(containerImageCtx, {
+    type: 'pie',
+    data: {
+        labels: {{ visualization.container_images|map(attribute='image')|tojson }},
+        datasets: [{
+            data: {{ visualization.container_images|map(attribute='count')|tojson }},
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Container Images'
+            }
+        }
+    }
+});
+{% endif %}
+
+{% if visualization and analysis_type == 'vm_analysis' %}
+// Filesystem Chart
+const filesystemCtx = document.getElementById('filesystemChart').getContext('2d');
+new Chart(filesystemCtx, {
+    type: 'pie',
+    data: {
+        labels: {{ visualization.filesystem_types|tojson }},
+        datasets: [{
+            data: Array({{ visualization.filesystem_types|length }}).fill(1),
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'File System Types'
+            }
+        }
+    }
+});
+
+// Artifact Chart
+const artifactCtx = document.getElementById('artifactChart').getContext('2d');
+new Chart(artifactCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ visualization.artifact_types|tojson }},
+        datasets: [{
+            label: 'Artifacts',
+            data: Array({{ visualization.artifact_types|length }}).fill(1),
+            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Artifact Types'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+{% endif %}
+
+{% if visualization and analysis_type == 'serverless_trace' %}
+// Function Chart
+const functionCtx = document.getElementById('functionChart').getContext('2d');
+new Chart(functionCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ visualization.function_names|tojson }},
+        datasets: [{
+            label: 'Invocations',
+            data: {{ visualization.invocation_counts|tojson }},
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Function Execution Counts'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Finding Chart
+const findingCtx = document.getElementById('findingChart').getContext('2d');
+new Chart(findingCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ visualization.finding_types|tojson }},
+        datasets: [{
+            data: {{ visualization.finding_counts|tojson }},
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Security Finding Types'
+            }
+        }
+    }
+});
+{% endif %}
 </script>
 {% endblock %}

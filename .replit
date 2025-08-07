@@ -3,7 +3,7 @@ run = "python app.py"
 
 [nix]
 channel = "stable-25_05"
-packages = ["cairo", "ffmpeg-full", "file", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "pkg-config", "qhull", "tcl", "tk", "zlib"]
+packages = ["cairo", "cargo", "ffmpeg-full", "file", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "lcms2", "libiconv", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "pkg-config", "qhull", "rustc", "tcl", "tk", "yara", "zlib"]
 
 [deployment]
 run = ["sh", "-c", "python app.py"]

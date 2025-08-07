@@ -13,29 +13,30 @@ class CloudForensics:
     def __init__(self):
         self.supported_clouds = ['aws', 'azure', 'gcp', 'onedrive', 'dropbox']
         self.container_runtimes = ['docker', 'kubernetes', 'containerd']
+        self.supported_clouds = ['aws', 'azure', 'gcp']
+        self.container_runtimes = ['docker', 'kubernetes', 'containerd']
+        self.docker_client = docker.from_env() if self._check_docker() else None
+        self.k8s_client = None
         
+    def _check_docker(self):
+        try:
+            docker.from_env().ping()
+            return True
+        except:
+            return False
+
     def acquire_cloud_data(self, cloud_provider, credentials, resource_types=None):
-        """
-        Acquire data from cloud providers.
-        
-        Args:
-            cloud_provider: 'aws', 'azure', 'gcp', etc.
-            credentials: Authentication credentials
-            resource_types: List of resource types to acquire
-            
-        Returns:
-            dict: Acquired cloud data
-        """
+        """Acquire data from cloud providers with live SDKs."""
         if resource_types is None:
-            resource_types = ['logs', 'storage', 'iam', 'compute']
-            
+            resource_types = ['logs', 'storage', 'iam']
+
         acquisition_data = {
             'provider': cloud_provider,
             'timestamp': datetime.utcnow().isoformat(),
             'resources': {},
             'metadata': {}
         }
-        
+
         try:
             if cloud_provider == 'aws':
                 acquisition_data['resources'] = self._acquire_aws_data(credentials, resource_types)
@@ -43,15 +44,100 @@ class CloudForensics:
                 acquisition_data['resources'] = self._acquire_azure_data(credentials, resource_types)
             elif cloud_provider == 'gcp':
                 acquisition_data['resources'] = self._acquire_gcp_data(credentials, resource_types)
-            elif cloud_provider in ['onedrive', 'dropbox']:
-                acquisition_data['resources'] = self._acquire_storage_service(cloud_provider, credentials)
-                
+            else:
+                raise ValueError(f"Unsupported cloud provider: {cloud_provider}")
+
         except Exception as e:
-            logging.error(f"Cloud acquisition failed: {str(e)}")
+            logger.error(f"Cloud acquisition failed: {str(e)}", exc_info=True)
             acquisition_data['error'] = str(e)
-            
+
         return acquisition_data
-        
+
+
+    def generate_cloud_visualization(self, results):
+        """Generate visualization data for cloud acquisition results."""
+        if not results or 'resources' not in results:
+            return None
+
+        viz_data = {
+            'resource_types': [],
+            'counts': [],
+            'details': []
+        }
+
+        for resource_type, data in results['resources'].items():
+            viz_data['resource_types'].append(resource_type.replace('_', ' ').title())
+
+            if isinstance(data, list):
+                count = len(data)
+                sample = data[0] if count > 0 else {}
+            elif isinstance(data, dict):
+                count = len(data.keys())
+                sample = data
+            else:
+                count = 1
+                sample = str(data)
+
+            viz_data['counts'].append(count)
+            viz_data['details'].append({
+                'type': resource_type,
+                'sample': sample,
+                'count': count
+            })
+
+        return viz_data
+    
+    
+    def _acquire_aws_data(self, credentials, resource_types):
+        """Acquire data from AWS using boto3."""
+        aws_data = {}
+        session = boto3.Session(
+            aws_access_key_id=credentials.get('access_key'),
+            aws_secret_access_key=credentials.get('secret_key'),
+            region_name=credentials.get('region')
+        )
+
+        if 'logs' in resource_types:
+            try:
+                cloudtrail = session.client('cloudtrail')
+                aws_data['cloudtrail_logs'] = cloudtrail.describe_trails()['trailList']
+
+                cloudwatch = session.client('logs')
+                aws_data['cloudwatch_log_groups'] = cloudwatch.describe_log_groups()['logGroups']
+            except Exception as e:
+                aws_data['logs_error'] = str(e)
+
+        if 'storage' in resource_types:
+            try:
+                s3 = session.client('s3')
+                aws_data['s3_buckets'] = [b['Name'] for b in s3.list_buckets()['Buckets']]
+            except Exception as e:
+                aws_data['storage_error'] = str(e)
+
+        if 'iam' in resource_types:
+            try:
+                iam = session.client('iam')
+                aws_data['iam_users'] = [u['UserName'] for u in iam.list_users()['Users']]
+                aws_data['iam_roles'] = [r['RoleName'] for r in iam.list_roles()['Roles']]
+            except Exception as e:
+                aws_data['iam_error'] = str(e)
+
+        if 'compute' in resource_types:
+            try:
+                ec2 = session.client('ec2')
+                aws_data['ec2_instances'] = [
+                    {'InstanceId': i['InstanceId'], 'State': i['State']['Name']} 
+                    for i in ec2.describe_instances()['Reservations'][0]['Instances']
+                ]
+            except Exception as e:
+                aws_data['compute_error'] = str(e)
+
+        return aws_data
+
+
+
+
+    
     def capture_volatile_cloud_data(self, cloud_provider, resource_ids):
         """
         Capture volatile cloud data like temporary containers and function memory.
@@ -87,84 +173,165 @@ class CloudForensics:
                 
         return capture_data
         
-    def analyze_kubernetes_pods(self, kubeconfig_path=None, namespace='default'):
-        """
-        Analyze Kubernetes pods, containers, and orchestration metadata.
+        def analyze_kubernetes_pods(self, kubeconfig_path=None, namespace='default'):
+                """Analyze Kubernetes pods with live cluster connection."""
+                analysis = {
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'pods': [],
+                    'containers': [],
+                    'volumes': [],
+                    'security_issues': []
+                }
+
+                try:
+                    if kubeconfig_path:
+                        kube_config.load_kube_config(config_file=kubeconfig_path)
+                    else:
+                        kube_config.load_incluster_config()
+
+                    self.k8s_client = kubernetes.client.CoreV1Api()
+
+                    # Get pods in namespace
+                    pods = self.k8s_client.list_namespaced_pod(namespace=namespace)
+                    for pod in pods.items:
+                        pod_info = {
+                            'name': pod.metadata.name,
+                            'namespace': pod.metadata.namespace,
+                            'status': pod.status.phase,
+                            'containers': [c.name for c in pod.spec.containers],
+                            'node': pod.spec.node_name,
+                            'creation_timestamp': pod.metadata.creation_timestamp.isoformat(),
+                            'labels': pod.metadata.labels,
+                            'annotations': pod.metadata.annotations
+                        }
+                        analysis['pods'].append(pod_info)
+
+                        # Analyze containers in pod
+                        for container in pod.spec.containers:
+                            container_info = {
+                                'name': container.name,
+                                'image': container.image,
+                                'ports': [{'port': p.container_port, 'protocol': p.protocol} 
+                                         for p in container.ports] if container.ports else [],
+                                'security_context': str(container.security_context),
+                                'resources': str(container.resources)
+                            }
+                            analysis['containers'].append(container_info)
+
+                        # Analyze volumes
+                        for volume in pod.spec.volumes:
+                            volume_info = {
+                                'name': volume.name,
+                                'type': self._get_volume_type(volume)
+                            }
+                            analysis['volumes'].append(volume_info)
+
+                        # Check for security issues
+                        security_issues = self._check_pod_security(pod)
+                        analysis['security_issues'].extend(security_issues)
+
+                except Exception as e:
+                    logger.error(f"Kubernetes analysis failed: {str(e)}", exc_info=True)
+                    analysis['error'] = str(e)
+
+                return analysis
+
+        def generate_k8s_visualization(self, results):
+                """Generate visualization data for Kubernetes analysis."""
+                if not results or 'pods' not in results:
+                    return None
+
+                viz_data = {
+                    'pod_statuses': {},
+                    'container_images': [],
+                    'security_issues': len(results.get('security_issues', []))
+                }
+
+                # Count pod statuses
+                for pod in results['pods']:
+                    status = pod['status']
+                    viz_data['pod_statuses'][status] = viz_data['pod_statuses'].get(status, 0) + 1
+
+                # Count container images
+                if 'containers' in results:
+                    image_counts = {}
+                    for container in results['containers']:
+                        image = container['image']
+                        image_counts[image] = image_counts.get(image, 0) + 1
+                    viz_data['container_images'] = [{'image': k, 'count': v} for k, v in image_counts.items()]
+
+                return viz_data
         
-        Args:
-            kubeconfig_path: Path to kubeconfig file
-            namespace: Kubernetes namespace to analyze
-            
-        Returns:
-            dict: Kubernetes analysis results
-        """
-        analysis = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'pods': [],
-            'containers': [],
-            'volumes': [],
-            'metadata': {},
-            'security_issues': []
-        }
-        
-        try:
-            # Get pod information
-            pods_data = self._get_kubernetes_pods(namespace, kubeconfig_path)
-            analysis['pods'] = pods_data
-            
-            # Analyze container logs and mounted volumes
-            for pod in pods_data:
-                pod_analysis = self._analyze_pod_containers(pod, namespace)
-                analysis['containers'].extend(pod_analysis['containers'])
-                analysis['volumes'].extend(pod_analysis['volumes'])
-                analysis['security_issues'].extend(pod_analysis['security_issues'])
-                
-        except Exception as e:
-            logging.error(f"Kubernetes analysis failed: {str(e)}")
-            analysis['error'] = str(e)
-            
-        return analysis
-        
-    def analyze_docker_containers(self, container_ids=None):
-        """
-        Analyze Docker containers, images, and volumes.
-        
-        Args:
-            container_ids: List of container IDs to analyze (all if None)
-            
-        Returns:
-            dict: Docker analysis results
-        """
-        analysis = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'containers': [],
-            'images': [],
-            'volumes': [],
-            'networks': [],
-            'security_findings': []
-        }
-        
-        try:
-            # Get container information
-            if container_ids is None:
-                container_ids = self._get_all_docker_containers()
-                
-            for container_id in container_ids:
-                container_data = self._analyze_docker_container(container_id)
-                analysis['containers'].append(container_data)
-                
-            # Analyze Docker images
-            analysis['images'] = self._analyze_docker_images()
-            
-            # Analyze volumes and networks
-            analysis['volumes'] = self._analyze_docker_volumes()
-            analysis['networks'] = self._analyze_docker_networks()
-            
-        except Exception as e:
-            logging.error(f"Docker analysis failed: {str(e)}")
-            analysis['error'] = str(e)
-            
-        return analysis
+        def analyze_docker_containers(self, container_ids=None):
+            """Analyze Docker containers with live Docker connection."""
+            analysis = {
+                'timestamp': datetime.utcnow().isoformat(),
+                'containers': [],
+                'images': [],
+                'volumes': [],
+                'networks': [],
+                'security_findings': []
+            }
+
+            try:
+                if not self.docker_client:
+                    raise RuntimeError("Docker not available")
+
+                # Get containers
+                containers = self.docker_client.containers.list(all=True) if not container_ids else [
+                    self.docker_client.containers.get(cid) for cid in container_ids
+                ]
+
+                for container in containers:
+                    container_info = {
+                        'id': container.id,
+                        'name': container.name,
+                        'image': container.image.tags[0] if container.image.tags else container.image.id,
+                        'status': container.status,
+                        'ports': container.ports,
+                        'mounts': [{'source': m['Source'], 'destination': m['Destination']} 
+                                  for m in container.attrs['Mounts']],
+                        'created': container.attrs['Created']
+                    }
+                    analysis['containers'].append(container_info)
+
+                # Get images
+                images = self.docker_client.images.list()
+                for image in images:
+                    image_info = {
+                        'id': image.id,
+                        'tags': image.tags,
+                        'created': image.attrs['Created'],
+                        'size': image.attrs['Size']
+                    }
+                    analysis['images'].append(image_info)
+
+                # Get volumes
+                volumes = self.docker_client.volumes.list()
+                for volume in volumes:
+                    volume_info = {
+                        'name': volume.name,
+                        'driver': volume.attrs['Driver'],
+                        'mountpoint': volume.attrs['Mountpoint'],
+                        'created': volume.attrs['CreatedAt']
+                    }
+                    analysis['volumes'].append(volume_info)
+
+                # Get networks
+                networks = self.docker_client.networks.list()
+                for network in networks:
+                    network_info = {
+                        'name': network.name,
+                        'driver': network.attrs['Driver'],
+                        'containers': list(network.attrs['Containers'].keys()) if network.attrs['Containers'] else []
+                    }
+                    analysis['networks'].append(network_info)
+
+            except Exception as e:
+                logging.error(f"Docker analysis failed: {str(e)}")
+                analysis['error'] = str(e)
+
+            return analysis
         
     def trace_serverless_functions(self, cloud_provider, function_names=None):
         """
@@ -200,41 +367,58 @@ class CloudForensics:
         return tracing_data
         
     def analyze_vm_disks(self, vm_format, disk_path):
-        """
-        Analyze VM disk images from various hypervisors.
-        
-        Args:
-            vm_format: 'vmware', 'hyper-v', 'virtualbox', 'citrix'
-            disk_path: Path to VM disk file
-            
-        Returns:
-            dict: VM disk analysis results
-        """
-        analysis = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'vm_format': vm_format,
-            'disk_info': {},
-            'partitions': [],
-            'file_systems': [],
-            'artifacts': []
+            """Analyze VM disk images with enhanced forensics."""
+            analysis = {
+                'timestamp': datetime.utcnow().isoformat(),
+                'vm_format': vm_format,
+                'disk_info': {},
+                'partitions': [],
+                'file_systems': [],
+                'artifacts': [],
+                'indicators': []
+            }
+
+            try:
+                # Get basic disk info
+                disk_size = os.path.getsize(disk_path)
+                with open(disk_path, 'rb') as f:
+                    disk_hash = hashlib.sha256(f.read()).hexdigest()
+
+                analysis['disk_info'] = {
+                    'path': disk_path,
+                    'size': f"{disk_size / (1024*1024*1024):.2f} GB",
+                    'sha256': disk_hash,
+                    'format': vm_format,
+                    'analyzed_at': datetime.utcnow().isoformat()
+                }
+
+                # Simulate forensic analysis (in production, use actual tools)
+                if vm_format in ['vmware', 'hyper-v']:
+                    analysis['partitions'] = self._simulate_partition_analysis(disk_path)
+                    analysis['file_systems'] = self._simulate_filesystem_analysis(disk_path)
+                    analysis['artifacts'] = self._simulate_artifact_extraction(disk_path)
+                    analysis['indicators'] = self._analyze_indicators(disk_path)
+
+            except Exception as e:
+                logger.error(f"VM analysis failed: {str(e)}", exc_info=True)
+                analysis['error'] = str(e)
+
+            return analysis
+
+    def generate_vm_visualization(self, results):
+        """Generate visualization data for VM analysis."""
+        if not results or 'disk_info' not in results:
+            return None
+
+        viz_data = {
+            'disk_size': results['disk_info']['size'],
+            'partition_count': len(results.get('partitions', [])),
+            'filesystem_types': list(set(fs['type'] for fs in results.get('file_systems', []))),
+            'artifact_types': [a['type'] for a in results.get('artifacts', [])],
+            'indicator_count': len(results.get('indicators', []))
         }
-        
-        try:
-            # Basic disk information
-            analysis['disk_info'] = self._get_vm_disk_info(disk_path, vm_format)
-            
-            # Analyze partitions and file systems
-            analysis['partitions'] = self._analyze_vm_partitions(disk_path, vm_format)
-            analysis['file_systems'] = self._analyze_vm_filesystems(disk_path, vm_format)
-            
-            # Extract forensic artifacts
-            analysis['artifacts'] = self._extract_vm_artifacts(disk_path, vm_format)
-            
-        except Exception as e:
-            logging.error(f"VM analysis failed: {str(e)}")
-            analysis['error'] = str(e)
-            
-        return analysis
+
+        return viz_data
         
     def _acquire_aws_data(self, credentials, resource_types):
         """Acquire data from AWS services."""
@@ -254,31 +438,59 @@ class CloudForensics:
                 
         return aws_data
         
-    def _acquire_azure_data(self, credentials, resource_types):
-        """Acquire data from Azure services."""
-        azure_data = {}
-        
-        for resource_type in resource_types:
-            if resource_type == 'logs':
-                azure_data['activity_logs'] = self._get_azure_activity_logs()
-            elif resource_type == 'storage':
-                azure_data['storage_accounts'] = self._get_azure_storage()
-            elif resource_type == 'iam':
-                azure_data['ad_users'] = self._get_azure_ad_users()
-                
-        return azure_data
-        
-    def _acquire_gcp_data(self, credentials, resource_types):
-        """Acquire data from GCP services."""
-        gcp_data = {}
-        
-        for resource_type in resource_types:
-            if resource_type == 'logs':
-                gcp_data['audit_logs'] = self._get_gcp_audit_logs()
-            elif resource_type == 'storage':
-                gcp_data['cloud_storage'] = self._get_gcp_storage()
-                
-        return gcp_data
+        def _acquire_azure_data(self, credentials, resource_types):
+            """Acquire data from Azure using Azure SDK."""
+            azure_data = {}
+            credential = DefaultAzureCredential()
+
+            if 'logs' in resource_types:
+                try:
+                    # This would require additional setup with Azure Monitor
+                    azure_data['activity_logs'] = {'status': 'requires_azure_monitor_setup'}
+                except Exception as e:
+                    azure_data['logs_error'] = str(e)
+
+            if 'storage' in resource_types:
+                try:
+                    storage_client = StorageManagementClient(
+                        credential,
+                        credentials.get('subscription_id')
+                    )
+                    azure_data['storage_accounts'] = [
+                        a.name for a in storage_client.storage_accounts.list()
+                    ]
+                except Exception as e:
+                    azure_data['storage_error'] = str(e)
+
+            if 'iam' in resource_types:
+                try:
+                    # This would require Graph API permissions
+                    azure_data['ad_users'] = {'status': 'requires_graph_api_permissions'}
+                except Exception as e:
+                    azure_data['iam_error'] = str(e)
+
+            return azure_data
+
+        def _acquire_gcp_data(self, credentials, resource_types):
+            """Acquire data from GCP using Google Cloud SDK."""
+            gcp_data = {}
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials.get('credentials', '')
+
+            if 'logs' in resource_types:
+                try:
+                    logging_client = gcp_logging.Client(project=credentials.get('project_id'))
+                    gcp_data['log_sinks'] = [sink.name for sink in logging_client.list_sinks()]
+                except Exception as e:
+                    gcp_data['logs_error'] = str(e)
+
+            if 'storage' in resource_types:
+                try:
+                    storage_client = storage.Client(project=credentials.get('project_id'))
+                    gcp_data['buckets'] = [bucket.name for bucket in storage_client.list_buckets()]
+                except Exception as e:
+                    gcp_data['storage_error'] = str(e)
+
+            return gcp_data
         
     def _acquire_storage_service(self, service, credentials):
         """Acquire data from cloud storage services."""
